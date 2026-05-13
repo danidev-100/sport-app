@@ -1,13 +1,18 @@
- {
-  "name": "sport-dev",
-  "version": "1.0.0",
-  "description": "Sport club management - dev runner",
+{
+  "private": true,
   "scripts": {
-    "dev": "concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
-    "dev:backend": "npm run dev --prefix backend",
-    "dev:frontend": "npm run dev --prefix frontend"
+    "build": "cd frontend && npm run build",
+    "vercel-build": "npx prisma generate --schema=backend/prisma/schema.prisma && cd frontend && npm run build"
   },
-  "devDependencies": {
-    "concurrently": "^8.2.2"
+  "dependencies": {
+    "@prisma/client": "^5.10.0",
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.1",
+    "express": "^4.18.2",
+    "express-validator": "^7.0.1",
+    "google-auth-library": "^10.6.2",
+    "jsonwebtoken": "^9.0.2",
+    "prisma": "^5.10.0"
   }
 }
