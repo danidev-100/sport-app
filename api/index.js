@@ -1,6 +1,10 @@
 // Vercel serverless entry — wraps the Express app
 const app = require('../backend/src/app');
 
-// Support both CJS and Vercel service initialization
-module.exports = app;
-module.exports.default = app;
+// Explicit handler function for Vercel service compatibility
+function handler(req, res) {
+  return app(req, res);
+}
+
+module.exports = handler;
+module.exports.default = handler;
