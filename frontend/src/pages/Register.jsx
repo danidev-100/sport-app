@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { UserPlus } from 'lucide-react';
 
 export default function Register() {
   const [nombre, setNombre] = useState('');
@@ -53,71 +54,98 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <img
-            src="/Logo club coop beltrán.svg"
-            alt="Club"
-            className="w-20 h-20 mx-auto mb-4 object-contain"
-          />
-          <CardTitle className="text-primary text-2xl">Club Deportivo</CardTitle>
-          <CardDescription>Crear cuenta</CardDescription>
+    <div className="min-h-screen hero-gradient flex items-center justify-center p-4">
+      {/* Decorative elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-80 h-80 rounded-full bg-primary/5 blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-80 h-80 rounded-full bg-emerald-500/5 blur-3xl" />
+      </div>
+
+      <Card className="w-full max-w-md relative animate-slide-up glass-strong shadow-lg">
+        <CardHeader className="text-center pb-2">
+          <div className="w-16 h-16 rounded-2xl bg-primary/10 mx-auto mb-5 flex items-center justify-center ring-1 ring-primary/20 shadow-glow">
+            <img
+              src="/Logo club coop beltrán.svg"
+              alt="Club"
+              className="w-11 h-11 object-contain"
+            />
+          </div>
+          <CardTitle className="text-xl">
+            Club <span className="gradient-text">Deportivo</span>
+          </CardTitle>
+          <CardDescription className="text-sm mt-1">
+            Crear una cuenta administrativa
+          </CardDescription>
         </CardHeader>
-        <CardContent>
+
+        <CardContent className="pt-6">
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-muted-foreground">Nombre</label>
               <Input
                 type="text"
-                placeholder="Nombre"
+                placeholder="Tu nombre"
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}
                 disabled={isSubmitting}
               />
             </div>
-            <div className="space-y-2">
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-muted-foreground">Email</label>
               <Input
                 type="email"
-                placeholder="Email"
+                placeholder="tu@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isSubmitting}
+                autoComplete="email"
               />
             </div>
-            <div className="space-y-2">
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-muted-foreground">Contraseña</label>
               <Input
                 type="password"
-                placeholder="Contraseña"
+                placeholder="Mínimo 6 caracteres"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={isSubmitting}
+                autoComplete="new-password"
               />
             </div>
-            <div className="space-y-2">
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium text-muted-foreground">Confirmar contraseña</label>
               <Input
                 type="password"
-                placeholder="Confirmar contraseña"
+                placeholder="Repetí la contraseña"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 disabled={isSubmitting}
+                autoComplete="new-password"
               />
             </div>
 
             {error && (
-              <p className="text-sm text-destructive text-center">{error}</p>
+              <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-4 py-2.5">
+                <p className="text-sm text-destructive text-center font-medium">{error}</p>
+              </div>
             )}
 
-            <Button type="submit" className="w-full" disabled={isSubmitting}>
+            <Button type="submit" className="w-full h-10 gap-2" disabled={isSubmitting}>
+              <UserPlus className="w-4 h-4" />
               {isSubmitting ? 'Registrando...' : 'Registrarse'}
             </Button>
           </form>
         </CardContent>
-        <CardFooter className="justify-center">
+
+        <CardFooter className="justify-center pb-6">
           <Link
             to="/login"
             className="text-sm text-muted-foreground hover:text-foreground transition-colors"
           >
-            ¿Ya tenés cuenta? Ingresá
+            ¿Ya tenés cuenta? <span className="text-primary hover:underline">Ingresá</span>
           </Link>
         </CardFooter>
       </Card>

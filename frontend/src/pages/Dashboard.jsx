@@ -46,20 +46,27 @@ const Dashboard = () => {
   }, []);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 md:space-y-8">
+      {/* Header */}
       <div className="flex items-baseline justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Resumen</h1>
+        <div className="animate-fade-in">
+          <h1 className="text-2xl font-bold tracking-tight">Resumen</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Panorama general del club
           </p>
         </div>
-        <span className="text-sm text-muted-foreground">{new Date().getFullYear()}</span>
+        <span className="text-sm text-muted-foreground bg-muted/40 px-3 py-1 rounded-full border border-border/50">
+          {new Date().getFullYear()}
+        </span>
       </div>
 
-      <MetricasCards metricas={metricas} loading={loading} />
+      {/* Metrics */}
+      <div className="animate-slide-up">
+        <MetricasCards metricas={metricas} loading={loading} />
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+      {/* Charts & Recent */}
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 md:gap-6 animate-slide-up">
         <div className="lg:col-span-3">
           <DonutChart data={chartData} loading={loading} />
         </div>

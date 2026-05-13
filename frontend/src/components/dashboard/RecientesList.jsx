@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { formatDate, getPosicionLabel } from '../../utils/formatters';
+import { Users } from 'lucide-react';
 
 const Skeleton = () => (
   <div className="rounded-xl border border-border/50 bg-card p-6 animate-pulse">
@@ -19,12 +20,10 @@ const Skeleton = () => (
 const Empty = () => (
   <div className="rounded-xl border border-border/50 bg-card p-6">
     <div className="flex flex-col items-center justify-center h-48 text-center">
-      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center mb-3">
-        <svg className="w-5 h-5 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-        </svg>
+      <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center mb-3">
+        <Users className="w-5 h-5 text-muted-foreground" />
       </div>
-      <p className="text-sm text-muted-foreground">No hay jugadores</p>
+      <p className="text-sm text-muted-foreground">No hay jugadores recientes</p>
     </div>
   </div>
 );
@@ -34,42 +33,44 @@ const RecientesList = ({ jugadores, loading }) => {
   if (!jugadores?.length) return <Empty />;
 
   return (
-    <div className="rounded-xl border border-border/50 bg-card p-6">
+    <div className="rounded-xl border border-border/50 bg-card p-6 hover:border-border-light transition-all duration-300">
       <div className="flex items-center justify-between mb-5">
         <div>
-          <h2 className="text-sm font-medium text-foreground">Jugadores recientes</h2>
+          <h2 className="text-sm font-semibold text-foreground">Jugadores recientes</h2>
           <p className="text-xs text-muted-foreground mt-0.5">Últimos agregados</p>
         </div>
         <Link
           to="/jugadores"
-          className="text-xs font-medium text-primary hover:text-primary/80 transition-colors"
+          className="text-xs font-medium text-primary hover:text-primary-lighter transition-colors"
         >
           Ver todos
         </Link>
       </div>
 
-      <div className="space-y-1">
+      <div className="space-y-0.5">
         {jugadores.map((jugador) => (
           <Link
             key={jugador.id}
-            to={`/jugadores/${jugador.id}`}
-            className="flex items-center gap-3 px-2 py-2.5 rounded-lg hover:bg-accent/40 transition-colors -mx-2"
+            to={`/jugadores`}
+            className="flex items-center gap-3 px-2 py-2.5 rounded-lg hover:bg-white/[0.04] transition-colors -mx-2 group"
           >
             {jugador.fotoUrl ? (
               <img
                 src={jugador.fotoUrl}
                 alt={jugador.nombre}
-                className="w-9 h-9 rounded-full object-cover"
+                className="w-9 h-9 rounded-full object-cover ring-1 ring-border"
               />
             ) : (
-              <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground">
+              <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary ring-1 ring-primary/20">
                 {jugador.nombre?.charAt(0).toUpperCase()}
               </div>
             )}
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium truncate">{jugador.nombre}</p>
+              <p className="text-sm font-medium truncate text-foreground group-hover:text-primary transition-colors">
+                {jugador.nombre}
+              </p>
               <p className="text-xs text-muted-foreground">
-                {getPosicionLabel(jugador.posicion)}
+                {getPosicionLabel(jugador.posicion) || 'Sin posición'}
               </p>
             </div>
             <span className="text-[11px] text-muted-foreground whitespace-nowrap">

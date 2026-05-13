@@ -31,9 +31,9 @@ const Layout = ({ children }) => {
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar isOpen={sidebarOpen} onClose={closeSidebar} />
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         <Navbar onToggleSidebar={toggleSidebar} />
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-5 md:p-6 lg:p-8 animate-fade-in">
           <div className="max-w-7xl mx-auto">
             {children}
           </div>

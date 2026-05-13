@@ -5,12 +5,27 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableHead,
+  TableRow,
+  TableCell,
+} from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Plus } from 'lucide-react';
+import { Plus, Settings, Trash2, Pencil } from 'lucide-react';
 
-const UserForm = ({ onSubmit, initialData, loading }) => {
-  const [formData, setFormData] = useState(initialData || { email: '', password: '', nombre: '', rol: 'EDITOR' });
+const UserFormDialog = ({ open, onOpenChange, onSubmit, initialData, loading }) => {
+  const [formData, setFormData] = useState(
+    initialData || { email: '', password: '', nombre: '', rol: 'EDITOR' }
+  );
+
+  useEffect(() => {
+    if (open) {
+      setFormData(initialData || { email: '', password: '', nombre: '', rol: 'EDITOR' });
+    }
+  }, [open, initialData]);
 
   const handleChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -22,35 +37,61 @@ const UserForm = ({ onSubmit, initialData, loading }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div>
-        <label className="text-sm font-medium mb-2 block">Email</label>
-        <Input value={formData.email} onChange={(e) => handleChange('email', e.target.value)} type="email" />
-      </div>
-      <div>
-        <label className="text-sm font-medium mb-2 block">Contraseña</label>
-        <Input value={formData.password} onChange={(e) => handleChange('password', e.target.value)} type="password" />
-      </div>
-      <div>
-        <label className="text-sm font-medium mb-2 block">Nombre</label>
-        <Input value={formData.nombre} onChange={(e) => handleChange('nombre', e.target.value)} />
-      </div>
-      <div>
-        <label className="text-sm font-medium mb-2 block">Rol</label>
-        <Select value={formData.rol} onValueChange={(value) => handleChange('rol', value)}>
-          <SelectTrigger><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="ADMIN">Administrador</SelectItem>
-            <SelectItem value="EDITOR">Editor</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="flex justify-end gap-3">
-        <Button type="submit" disabled={loading}>
-          {initialData ? 'Actualizar' : 'Crear'}
-        </Button>
-      </div>
-    </form>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>{initialData ? 'Editar Usuario' : 'Nuevo Usuario'}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-muted-foreground">Nombre</label>
+            <Input
+              value={formData.nombre}
+              onChange={(e) => handleChange('nombre', e.target.value)}
+              placeholder="Nombre completo"
+              required
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-muted-foreground">Email</label>
+            <Input
+              value={formData.email}
+              onChange={(e) => handleChange('email', e.target.value)}
+              type="email"
+              placeholder="usuario@email.com"
+              required
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-muted-foreground">Contraseña</label>
+            <Input
+              value={formData.password}
+              onChange={(e) => handleChange('password', e.target.value)}
+              type="password"
+              placeholder={initialData ? 'Dejar vacío para mantener' : '••••••••'}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-muted-foreground">Rol</label>
+            <Select value={formData.rol} onValueChange={(value) => handleChange('rol', value)}>
+              <SelectTrigger className="w-full"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ADMIN">Administrador</SelectItem>
+                <SelectItem value="EDITOR">Editor</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancelar
+            </Button>
+            <Button type="submit" disabled={loading}>
+              {initialData ? 'Actualizar' : 'Crear'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 };
 
@@ -110,71 +151,92 @@ const Users = () => {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center animate-fade-in">
         <div>
-          <h1 className="text-2xl font-bold">Usuarios</h1>
-          <p className="text-muted-foreground">{users.length} usuarios registrados</p>
+          <h1 className="text-2xl font-bold tracking-tight">Usuarios</h1>
+          <p className="text-sm text-muted-foreground mt-1">{users.length} usuarios registrados</p>
         </div>
         <Button onClick={() => { setEditingUser(null); setModalOpen(true); }}>
           <Plus className="w-4 h-4 mr-2" /> Nuevo Usuario
         </Button>
       </div>
 
+      {/* Table */}
       {loading ? (
-        <div className="p-12 text-center text-muted-foreground">Cargando...</div>
+        <div className="rounded-xl border border-border/50 bg-card p-12 text-center">
+          <div className="spinner mx-auto mb-3" />
+          <p className="text-sm text-muted-foreground">Cargando usuarios...</p>
+        </div>
       ) : users.length === 0 ? (
-        <Card><CardContent className="p-12 text-center">No hay usuarios</CardContent></Card>
+        <div className="rounded-xl border border-border/50 bg-card p-12 text-center">
+          <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center mx-auto mb-4">
+            <Settings className="w-6 h-6 text-muted-foreground" />
+          </div>
+          <p className="text-muted-foreground font-medium">No hay usuarios</p>
+        </div>
       ) : (
-        <Card>
-          <CardContent className="p-0">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">Nombre</th>
-                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">Email</th>
-                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">Rol</th>
-                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">Creado</th>
-                  <th className="text-left p-4 text-sm font-medium text-muted-foreground">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((row) => (
-                  <tr key={row.id} className="border-b">
-                    <td className="p-4">{row.nombre}</td>
-                    <td className="p-4 text-muted-foreground">{row.email}</td>
-                    <td className="p-4">
-                      <Badge variant={row.rol === 'ADMIN' ? 'default' : 'secondary'}>
-                        {row.rol === 'ADMIN' ? 'Admin' : 'Editor'}
-                      </Badge>
-                    </td>
-                    <td className="p-4 text-muted-foreground">{new Date(row.createdAt).toLocaleDateString('es-AR')}</td>
-                    <td className="p-4">
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="outline" onClick={() => { setEditingUser(row); setModalOpen(true); }}>
-                          Editar
-                        </Button>
-                        <Button size="sm" variant="destructive" onClick={() => handleDelete(row)}>
-                          Eliminar
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </CardContent>
-        </Card>
+        <div className="rounded-xl border border-border/50 bg-card overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="font-semibold">Nombre</TableHead>
+                <TableHead className="font-semibold">Email</TableHead>
+                <TableHead className="font-semibold">Rol</TableHead>
+                <TableHead className="hidden md:table-cell font-semibold">Creado</TableHead>
+                <TableHead className="text-right font-semibold">Acciones</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {users.map((row) => (
+                <TableRow key={row.id} className="group">
+                  <TableCell className="font-medium">{row.nombre}</TableCell>
+                  <TableCell className="text-muted-foreground">{row.email}</TableCell>
+                  <TableCell>
+                    <Badge variant={row.rol === 'ADMIN' ? 'default' : 'secondary'}>
+                      {row.rol === 'ADMIN' ? 'Admin' : 'Editor'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell text-muted-foreground">
+                    {new Date(row.createdAt).toLocaleDateString('es-AR', {
+                      year: 'numeric', month: 'short', day: 'numeric'
+                    })}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8"
+                        onClick={() => { setEditingUser(row); setModalOpen(true); }}
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => handleDelete(row)}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       )}
 
-      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingUser ? 'Editar Usuario' : 'Nuevo Usuario'}</DialogTitle>
-          </DialogHeader>
-          <UserForm onSubmit={handleSubmit} initialData={editingUser} loading={saving} />
-        </DialogContent>
-      </Dialog>
+      <UserFormDialog
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        onSubmit={handleSubmit}
+        initialData={editingUser}
+        loading={saving}
+      />
     </div>
   );
 };

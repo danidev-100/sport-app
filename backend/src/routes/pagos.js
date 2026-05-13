@@ -1,9 +1,21 @@
 const express = require('express');
+const { body } = require('express-validator');
 const mercadoPagoService = require('../services/mercadoPagoService');
+const auth = require('../middleware/auth');
+const authorize = require('../middleware/roles');
 const authJugador = require('../middleware/authJugador');
+const pagoController = require('../controllers/pagoController');
 const prisma = require('../config/database');
 
 const router = express.Router();
+
+// ── Admin: create a payment for a cuota ─────────────────
+router.post('/', auth, authorize('ADMIN'), [
+  body('cuotaId').isUUID().withMessage('ID de cuota inválido'),
+  body('monto').isFloat({ min: 0.01 }).withMessage('Monto debe ser mayor a 0'),
+  body('metodoPago').optional().isString(),
+  body('observacion').optional().isString(),
+], pagoController.create);
 
 router.post('/crear-preferencia', authJugador, async (req, res) => {
   try {
