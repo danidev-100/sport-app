@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  EDITOR
+}
+
+enum Posicion {
+  PORTERO
+  DEFENSA
+  CENTROCAMPISTA
+  DELANTERO
+}
+
+enum Categoria {
+  C7
+  C11
+  C13
+  C15
+  C17
+  C20
+  PRIMERA
+  SENIOR
+  VETERANO
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  nombre    String
+  rol       Role     @default(EDITOR)
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  historialCambios HistorialCambios[]
+}
+
+model Jugador {
+  id        String     @id @default(uuid())
+  nombre    String
+  posicion  Posicion?
+  categoria Categoria?
+  edad      Int
+  telefono  String?
+  email     String?
+  fotoUrl   String?
+  activo    Boolean    @default(true)
+  googleId  String?    @unique
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  cuotas    Cuota[]
+  historialCambios HistorialCambios[]
+}
+
+model Cuota {
+  id          String   @id @default(uuid())
+  numeroIdentificacion String?
+  jugadorId   String
+  mes         Int
+  anio        Int
+  monto       Decimal  @db.Decimal(10, 2)
+  vencida     Boolean  @default(false)
+  fechaVencimiento DateTime
+  createdAt   DateTime @default(now())
+
+  jugador     Jugador  @relation(fields: [jugadorId], references: [id], onDelete: Cascade)
+  pagos       Pago[]
+
+  @@unique([jugadorId, mes, anio])
+}
+
+model Pago {
+  id        String   @id @default(uuid())
+  cuotaId   String
+  monto     Decimal  @db.Decimal(10, 2)
+  fechaPago DateTime @default(now())
+  metodoPago String?
+  observacion String?
+  createdAt DateTime @default(now())
+
+  cuota     Cuota    @relation(fields: [cuotaId], references: [id], onDelete: Cascade)
+}
+
+model HistorialCambios {
+  id         String   @id @default(uuid())
+  entidad   String
+  entidadId String
+  campo      String
+  valorAnterior String?
+  valorNuevo   String?
+  userId    String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+  jugador   Jugador? @relation(fields: [entidadId], references: [id], onDelete: Cascade)
+}
