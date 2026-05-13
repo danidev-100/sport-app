@@ -6,7 +6,7 @@
       "framework": "vite"
     },
     "backend": {
-      "entrypoint": "api/index.js",
+      "entrypoint": "serverless.js",
       "routePrefix": "/api"
     }
   }
