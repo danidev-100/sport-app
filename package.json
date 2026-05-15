@@ -1,6 +1,7 @@
 {
   "private": true,
   "dependencies": {
+    "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^5.10.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
@@ -8,7 +9,8 @@
     "express": "^4.18.2",
     "express-validator": "^7.0.1",
     "google-auth-library": "^10.6.2",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.20.0"
   },
   "devDependencies": {
     "prisma": "^5.10.0"

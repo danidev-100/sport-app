@@ -5,7 +5,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 enum Role {
@@ -104,4 +103,24 @@ model HistorialCambios {
 
   user      User     @relation(fields: [userId], references: [id])
   jugador   Jugador? @relation(fields: [entidadId], references: [id], onDelete: Cascade)
+}
+
+model Ingreso {
+  id          String   @id @default(uuid())
+  descripcion String
+  monto       Decimal  @db.Decimal(10, 2)
+  partidoId   String?
+  fecha       DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Gasto {
+  id          String   @id @default(uuid())
+  descripcion String
+  monto       Decimal  @db.Decimal(10, 2)
+  partidoId   String?
+  fecha       DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }

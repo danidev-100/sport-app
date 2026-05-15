@@ -11,6 +11,7 @@ import Jugadores from './pages/Jugadores';
 import Cuotas from './pages/Cuotas';
 import Pagos from './pages/Pagos';
 import Users from './pages/Users';
+import Contabilidad from './pages/Contabilidad';
 
 const ProtectedRoute = ({ children }) => {
   const { user } = useAuth();
@@ -96,6 +97,16 @@ const App = () => {
           <ProtectedRoute>
             <Layout>
               <Users />
+            </Layout>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/contabilidad"
+        element={
+          <ProtectedRoute>
+            <Layout>
+              <Contabilidad />
             </Layout>
           </ProtectedRoute>
         }

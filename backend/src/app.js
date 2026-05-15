@@ -23,6 +23,9 @@ app.use('/api/cuotas', cuotaRoutes);
 app.use('/api/pagos', pagoRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/ingresos', require('./routes/ingresos'));
+app.use('/api/gastos', require('./routes/gastos'));
+app.use('/api/contabilidad', require('./routes/contabilidad'));
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Club Deportivo API' });

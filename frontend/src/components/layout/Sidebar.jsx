@@ -9,13 +9,16 @@ const navItems = [
   { to: '/pagos', label: 'Pagos', icon: Receipt },
 ];
 
+const adminNavItems = [
+  { to: '/usuarios', label: 'Usuarios', icon: Settings },
+  { to: '/contabilidad', label: 'Contabilidad', icon: Receipt },
+];
+
 const Sidebar = ({ isOpen = false, onClose = () => {} }) => {
   const { user } = useAuth();
   const isAdmin = user?.rol === 'ADMIN';
 
-  const links = isAdmin
-    ? [...navItems, { to: '/usuarios', label: 'Usuarios', icon: Settings }]
-    : navItems;
+  const links = isAdmin ? [...navItems, ...adminNavItems] : navItems;
 
   return (
     <>
