@@ -192,11 +192,15 @@ const Cuotas = () => {
   // ── Handlers ─────────────────────────────────────
   const handleGenerar = async (e) => {
     e.preventDefault();
+
+    // Use matchedPlayer directly instead of relying on the effect that syncs genData.jugadorId
+    const playerId = matchedPlayer ? String(matchedPlayer.id) : genData.jugadorId;
+
     const missing = [];
-    if (!genData.jugadorId) missing.push('Jugador');
-    if (genData.mes === '' || genData.mes === undefined) missing.push('Mes');
-    if (genData.anio === '' || genData.anio === undefined) missing.push('Año');
-    if (genData.monto === undefined || genData.monto === '' || isNaN(Number(genData.monto))) missing.push('Monto');
+    if (!playerId) missing.push('Jugador');
+    if (!genData.mes) missing.push('Mes');
+    if (!genData.anio) missing.push('Año');
+    if (!genData.monto || isNaN(Number(genData.monto)) || Number(genData.monto) <= 0) missing.push('Monto');
     if (missing.length) {
       alert('Completa los campos: ' + missing.join(', '));
       return;
@@ -205,7 +209,7 @@ const Cuotas = () => {
     setGenerating(true);
     try {
       await apiClient.post('/cuotas/generar-jugador', {
-        jugadorId: genData.jugadorId,
+        jugadorId: playerId,
         mes: parseInt(genData.mes, 10),
         anio: parseInt(genData.anio, 10),
         monto: parseFloat(genData.monto),
@@ -372,8 +376,8 @@ const Cuotas = () => {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
 
               <Select
-                value={genData.mes || undefined}
-                onValueChange={(v) => setGenData((prev) => ({ ...prev, mes: v || '' }))}
+                value={genData.mes}
+                onValueChange={(v) => setGenData((prev) => ({ ...prev, mes: v }))}
               >
                 <SelectTrigger className="w-full"><SelectValue placeholder="Mes" /></SelectTrigger>
                 <SelectContent>
@@ -384,8 +388,8 @@ const Cuotas = () => {
               </Select>
 
               <Select
-                value={genData.anio || undefined}
-                onValueChange={(v) => setGenData((prev) => ({ ...prev, anio: v || '' }))}
+                value={genData.anio}
+                onValueChange={(v) => setGenData((prev) => ({ ...prev, anio: v }))}
               >
                 <SelectTrigger className="w-full"><SelectValue placeholder="Año" /></SelectTrigger>
                 <SelectContent>

@@ -1,3 +1,4 @@
+require('dotenv').config();
 const { PrismaClient } = require('@prisma/client');
 const { Pool } = require('pg');
 const { PrismaPg } = require('@prisma/adapter-pg');
@@ -8,6 +9,9 @@ const prisma = new PrismaClient({ adapter });
 
 const CATEGORIAS = ['C7', 'C11', 'C13', 'C15', 'C17', 'C20', 'PRIMERA', 'SENIOR', 'VETERANO'];
 const POSICIONES = ['PORTERO', 'DEFENSA', 'CENTROCAMPISTA', 'DELANTERO'];
+const METODOS_PAGO = ['EFECTIVO', 'TRANSFERENCIA', 'MERCADO_PAGO'];
+
+const MONTO_CUOTA = 20000;
 
 const nombres = [
   'Lautaro Martínez', 'Matías Gómez', 'Facundo Pérez', 'Ignacio Rodríguez', 'Santiago López',
@@ -41,9 +45,9 @@ function randomChoice(arr) {
 
 async function main() {
   const args = process.argv.slice(2);
-  const jugadoresPorCategoria = parseInt(args[0]) || 10;
+  const jugadoresPorCategoria = parseInt(args[0]) || 8;
   const mesesAcrear = parseInt(args[1]) || 5;
-  const probabilidadPago = parseFloat(args[2]) || 0.65;
+  const probabilidadPago = parseFloat(args[2]) || 0.6; // 60% de las cuotas pagas
   const anio = parseInt(args[3]) || new Date().getFullYear();
 
   console.log('═══════════════════════════════════');
@@ -53,6 +57,7 @@ async function main() {
   console.log(`  Meses a crear:           ${mesesAcrear}`);
   console.log(`  Probabilidad de pago:    ${Math.round(probabilidadPago * 100)}%`);
   console.log(`  Año:                     ${anio}`);
+  console.log(`  Monto por cuota:         $${MONTO_CUOTA.toLocaleString('es-AR')}`);
   console.log('───────────────────────────────────');
 
   console.log('\n🧹 Limpiando datos existentes...');
@@ -95,51 +100,53 @@ async function main() {
       });
 
       for (let m = 1; m <= mesesAcrear; m++) {
-        const montoBase = 3000 + (m * 500) + randomEntre(0, 2000);
-        const monto = Math.round(montoBase / 100) * 100; // redondear a centenas
-
-        const fechaVto = new Date(anio, m - 1, 15);
-        const yaPaso = new Date() > fechaVto;
-
-        const cuota = await prisma.cuota.create({
-          data: {
-            jugadorId: jugador.id,
-            mes: m,
-            anio,
-            monto,
-            vencida: yaPaso,
-            fechaVencimiento: fechaVto,
-            numeroIdentificacion: `${cat}-${i + 1}-${m}-${anio}`,
-          },
-        });
-        totalCuotas++;
-
-        // Pago aleatorio según probabilidad
+        // Si "está pagada" → creamos Cuota + Pago
+        // Si "está impaga" → NO creamos nada (así se puede generar después)
         if (Math.random() < probabilidadPago) {
+          const fechaVto = new Date(anio, m - 1, 15);
+          const yaPaso = new Date() > fechaVto;
+
+          const cuota = await prisma.cuota.create({
+            data: {
+              jugadorId: jugador.id,
+              mes: m,
+              anio,
+              monto: MONTO_CUOTA,
+              vencida: yaPaso,
+              fechaVencimiento: fechaVto,
+              numeroIdentificacion: `${cat}-${i + 1}-${m}-${anio}`,
+            },
+          });
+          totalCuotas++;
+
           const diasAntesVto = randomEntre(1, 14);
           const fechaPago = new Date(anio, m - 1, Math.min(14, Math.max(1, 15 - diasAntesVto)));
 
           await prisma.pago.create({
             data: {
               cuotaId: cuota.id,
-              monto,
+              monto: MONTO_CUOTA,
               fechaPago,
-              metodoPago: randomChoice(['EFECTIVO', 'TRANSFERENCIA', 'MERCADO_PAGO']),
+              metodoPago: randomChoice(METODOS_PAGO),
             },
           });
           totalPagos++;
         }
+        // Impaga: no se crea nada — el mes queda libre para generar después
       }
     }
   }
 
+  const totalJugadores = jugadoresPorCategoria * CATEGORIAS.length;
+  const totalMesesPosibles = totalJugadores * mesesAcrear;
+
   console.log('\n═══════════════════════════════════');
   console.log('  ✅ SEED COMPLETADO');
   console.log('───────────────────────────────────');
-  console.log(`  Jugadores: ${jugadoresPorCategoria * CATEGORIAS.length}`);
-  console.log(`  Cuotas:    ${totalCuotas}`);
-  console.log(`  Pagos:     ${totalPagos}`);
-  console.log(`  Tasa pago: ${totalCuotas > 0 ? Math.round((totalPagos / totalCuotas) * 100) : 0}%`);
+  console.log(`  Jugadores:        ${totalJugadores}`);
+  console.log(`  Cuotas (pagas):   ${totalCuotas} (× $${MONTO_CUOTA.toLocaleString('es-AR')})`);
+  console.log(`  Pagos:            ${totalPagos}`);
+  console.log(`  Meses libres:     ${totalMesesPosibles - totalCuotas} (sin cuota — disponible para generar)`);
   console.log('═══════════════════════════════════\n');
 
   await prisma.$disconnect();
