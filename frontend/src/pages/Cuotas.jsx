@@ -13,7 +13,17 @@ import {
   TableCell,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, Search, AlertTriangle, Plus, CheckCircle, Users, Filter, DollarSign } from 'lucide-react';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import {
+  Command,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+} from '@/components/ui/command';
+import { cn } from '@/lib/utils';
+import { CreditCard, Search, AlertTriangle, Plus, CheckCircle, Users, DollarSign, ChevronsUpDown, Check } from 'lucide-react';
 import { formatCurrency } from '../utils/formatters';
 
 const filterMeses = [
@@ -24,7 +34,6 @@ const filterMeses = [
 ];
 
 const anios = ['2025', '2026', '2027'];
-const categorias = ['C7', 'C11', 'C13', 'C15', 'C17', 'C20', 'PRIMERA', 'SENIOR', 'VETERANO'];
 
 // ── Helper: compute morosos from cuotas + jugadores list ─────
 // Finds both: (a) existing unpaid cuotas from past months, and
@@ -136,10 +145,9 @@ const Cuotas = () => {
   const [generating, setGenerating] = useState(false);
   const [filters, setFilters] = useState({ playerSearch: '', anio: '' });
   const [searchInput, setSearchInput] = useState('');
-  const [categoriaFilter, setCategoriaFilter] = useState('');
-  const [adeudados, setAdeudados] = useState([]);
-  const [loadingAdeudados, setLoadingAdeudados] = useState(false);
   const [genData, setGenData] = useState({ jugadorId: '', mes: '', anio: '', monto: '' });
+  const [jugadorSearch, setJugadorSearch] = useState('');
+  const [jugadorPopoverOpen, setJugadorPopoverOpen] = useState(false);
   const [payingId, setPayingId] = useState(null);
 
   // ── Fetch everything on mount ────────────────────
@@ -193,85 +201,6 @@ const Cuotas = () => {
     return () => clearTimeout(t);
   }, [searchInput]);
 
-  // ── Category debtor filter (uses allCuotas) ──────
-  useEffect(() => {
-    if (!categoriaFilter) {
-      setAdeudados([]);
-      return;
-    }
-
-    const computeAdeudados = async () => {
-      setLoadingAdeudados(true);
-      try {
-        // Get jugadores in this category
-        const jugRes = await apiClient.get(`/jugadores?categoria=${categoriaFilter}`);
-        const jugadoresCat = jugRes.data.jugadores || [];
-
-        const now = new Date();
-        const currentYear = now.getFullYear();
-        const currentMonth = now.getMonth() + 1;
-
-        const result = jugadoresCat
-          .map((j) => {
-            const playerCuotas = allCuotas.filter(
-              (c) => c.jugadorId === j.id || c.jugador?.id === j.id
-            );
-
-            // Existing unpaid cuotas (past months)
-            const unpaid = playerCuotas.filter((c) => {
-              const totalPagado = (c.pagos || []).reduce(
-                (s, p) => s + parseFloat(p.monto || 0), 0
-              );
-              if (totalPagado >= parseFloat(c.monto || 0)) return false;
-              return c.anio < currentYear || (c.anio === currentYear && c.mes < currentMonth);
-            });
-
-            // Missing cuotas for past months of current year
-            const refMonto = playerCuotas.length > 0
-              ? parseFloat(playerCuotas[playerCuotas.length - 1].monto || 0)
-              : 0;
-            const missingMeses = [];
-            for (let mes = 1; mes < currentMonth; mes++) {
-              const hasCuota = playerCuotas.some(
-                (c) => c.mes === mes && c.anio === currentYear
-              );
-              if (!hasCuota && playerCuotas.length > 0) {
-                // Player has at least some cuotas — they're in the system
-                missingMeses.push({ mes, anio: currentYear, monto: refMonto });
-              }
-            }
-
-            const todasLasDeudas = [...unpaid, ...missingMeses];
-            if (todasLasDeudas.length === 0) return null;
-
-            return {
-              id: j.id,
-              nombre: j.nombre,
-              categoria: j.categoria,
-              cuotasPendientes: todasLasDeudas.length,
-              totalAdeudado: todasLasDeudas.reduce((s, d) => s + parseFloat(d.monto || 0), 0),
-              meses: todasLasDeudas
-                .sort((a, b) => a.anio - b.anio || a.mes - b.mes)
-                .map((d) => ({
-                  mes: d.mes, anio: d.anio, monto: parseFloat(d.monto || 0),
-                })),
-            };
-          })
-          .filter(Boolean)
-          .sort((a, b) => b.cuotasPendientes - a.cuotasPendientes);
-
-        setAdeudados(result);
-      } catch (err) {
-        console.error('Error computing debtors by category:', err);
-        setAdeudados([]);
-      } finally {
-        setLoadingAdeudados(false);
-      }
-    };
-
-    computeAdeudados();
-  }, [categoriaFilter, allCuotas]);
-
   // ── Handlers ─────────────────────────────────────
   const handleGenerar = async (e) => {
     e.preventDefault();
@@ -319,6 +248,14 @@ const Cuotas = () => {
       j.nombre?.toLowerCase().includes(filters.playerSearch.toLowerCase())
     ) || null;
   }, [filters.playerSearch, jugadores]);
+
+  const filteredJugadores = useMemo(() => {
+    if (!jugadorSearch) return jugadores.filter((j) => j.activo);
+    const q = jugadorSearch.toLowerCase();
+    return jugadores.filter(
+      (j) => j.activo && j.nombre?.toLowerCase().includes(q)
+    );
+  }, [jugadorSearch, jugadores]);
 
   const playerMonths = useMemo(() => {
     if (!filters.playerSearch) return null;
@@ -419,103 +356,7 @@ const Cuotas = () => {
             </SelectContent>
           </Select>
         </div>
-
-        {/* Category debtor filter */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 pt-1 border-t border-border/40">
-          <div className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-            <Filter className="w-3.5 h-3.5" />
-            Filtrar por categoría:
-          </div>
-          <Select
-            value={categoriaFilter}
-            onValueChange={(value) =>
-              setCategoriaFilter((prev) => (prev === value ? '' : value))
-            }
-          >
-            <SelectTrigger className="w-full sm:w-[200px] h-8 text-xs">
-              <SelectValue placeholder="Seleccionar categoría" />
-            </SelectTrigger>
-            <SelectContent>
-              {categorias.map((c) => (
-                <SelectItem key={c} value={c}>{c}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {categoriaFilter && (
-            <span className="text-xs text-muted-foreground">
-              {loadingAdeudados
-                ? 'Buscando...'
-                : `${adeudados.length} jugador${adeudados.length !== 1 ? 'es' : ''} con deudas`}
-            </span>
-          )}
-        </div>
       </div>
-
-      {/* Category debtors table */}
-      {categoriaFilter && (
-        <div className="animate-slide-up">
-          {loadingAdeudados ? (
-            <div className="rounded-xl border border-border/50 bg-card p-8 text-center">
-              <div className="spinner mx-auto mb-3" />
-              <p className="text-sm text-muted-foreground">Buscando jugadores morosos en {categoriaFilter}...</p>
-            </div>
-          ) : adeudados.length === 0 ? (
-            <div className="rounded-xl border border-border/50 bg-card p-8 text-center">
-              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                <CheckCircle className="w-6 h-6 text-primary" />
-              </div>
-              <p className="text-foreground font-medium mb-1">¡Todos al día en {categoriaFilter}!</p>
-              <p className="text-sm text-muted-foreground">No hay jugadores con cuotas impagas en esta categoría</p>
-            </div>
-          ) : (
-            <div className="rounded-xl border border-border/50 bg-card overflow-hidden">
-              <div className="px-5 py-3 border-b border-border/50 bg-muted/20">
-                <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-semibold">
-                    Categoría {categoriaFilter} — {adeudados.length} jugador{adeudados.length !== 1 ? 'es' : ''} con deudas
-                  </span>
-                </div>
-              </div>
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="font-semibold">Jugador</TableHead>
-                    <TableHead className="font-semibold">Categoría</TableHead>
-                    <TableHead className="font-semibold">Cuotas Impagas</TableHead>
-                    <TableHead className="font-semibold">Total Adeudado</TableHead>
-                    <TableHead className="font-semibold">Períodos</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {adeudados.map((j) => (
-                    <TableRow key={j.id}>
-                      <TableCell className="font-medium">{j.nombre}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="font-mono text-xs">{j.categoria}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="destructive">{j.cuotasPendientes} cuota{j.cuotasPendientes !== 1 ? 's' : ''}</Badge>
-                      </TableCell>
-                      <TableCell className="font-semibold text-destructive">
-                        {formatCurrency(j.totalAdeudado)}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground text-xs max-w-[200px]">
-                        <span className="truncate block">
-                          {j.meses
-                            .sort((a, b) => a.anio - b.anio || a.mes - b.mes)
-                            .map((m) => `${filterMeses[m.mes - 1]?.label} ${m.anio}`)
-                            .join(', ')}
-                        </span>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </div>
-      )}
 
       {/* Generate Cuota Form (admin only) */}
       {isAdmin && (
@@ -526,17 +367,54 @@ const Cuotas = () => {
           </div>
           <form onSubmit={handleGenerar}>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-              <Select
-                value={genData.jugadorId || undefined}
-                onValueChange={(v) => setGenData((prev) => ({ ...prev, jugadorId: v || '' }))}
-              >
-                <SelectTrigger className="w-full"><SelectValue placeholder="Jugador" /></SelectTrigger>
-                <SelectContent>
-                  {jugadores.filter((j) => j.activo).map((j) => (
-                    <SelectItem key={j.id} value={String(j.id)}>{j.nombre}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover open={jugadorPopoverOpen} onOpenChange={setJugadorPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={jugadorPopoverOpen}
+                    className="w-full justify-between font-normal"
+                  >
+                    {genData.jugadorId
+                      ? jugadores.find((j) => String(j.id) === genData.jugadorId)?.nombre
+                      : 'Jugador'}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                  <Command>
+                    <CommandInput
+                      placeholder="Buscar jugador..."
+                      value={jugadorSearch}
+                      onValueChange={setJugadorSearch}
+                    />
+                    <CommandList>
+                      <CommandEmpty>No se encontró el jugador</CommandEmpty>
+                      <CommandGroup>
+                        {filteredJugadores.map((j) => (
+                          <CommandItem
+                            key={j.id}
+                            value={j.nombre}
+                            onSelect={() => {
+                              setGenData((prev) => ({ ...prev, jugadorId: String(j.id) }));
+                              setJugadorPopoverOpen(false);
+                              setJugadorSearch('');
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                'mr-2 h-4 w-4',
+                                String(j.id) === genData.jugadorId ? 'opacity-100' : 'opacity-0'
+                              )}
+                            />
+                            {j.nombre}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
 
               <Select
                 value={genData.mes || undefined}
