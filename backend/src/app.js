@@ -16,16 +16,23 @@ app.use(cors());
 app.use(express.json({ strict: false }));
 app.use(express.urlencoded({ extended: true }));
 
-app.use('/api/auth', authRoutes);
-app.use('/api/jugadores/auth', jugadorAuthRoutes);
-app.use('/api/jugadores', jugadorRoutes);
-app.use('/api/cuotas', cuotaRoutes);
-app.use('/api/pagos', pagoRoutes);
-app.use('/api/dashboard', dashboardRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/ingresos', require('./routes/ingresos'));
-app.use('/api/gastos', require('./routes/gastos'));
-app.use('/api/contabilidad', require('./routes/contabilidad'));
+// Helper: mount routes under both /path and /api/path
+// (Vercel strips /api in prod, local dev keeps it via proxy)
+const mount = (prefix, router) => {
+  app.use(prefix, router);
+  app.use('/api' + prefix, router);
+};
+
+mount('/auth', authRoutes);
+mount('/jugadores/auth', jugadorAuthRoutes);
+mount('/jugadores', jugadorRoutes);
+mount('/cuotas', cuotaRoutes);
+mount('/pagos', pagoRoutes);
+mount('/dashboard', dashboardRoutes);
+mount('/users', userRoutes);
+mount('/ingresos', require('./routes/ingresos'));
+mount('/gastos', require('./routes/gastos'));
+mount('/contabilidad', require('./routes/contabilidad'));
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Club Deportivo API' });
