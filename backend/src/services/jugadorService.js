@@ -63,7 +63,23 @@ const create = async (data, userId) => {
   });
 
   await historialService.create(userId, 'Jugador', jugador.id, 'creacion', null, JSON.stringify(jugador));
-  return jugador;
+
+  // Crear cuotas como impagas para todos los meses del año actual
+  const currentYear = new Date().getFullYear();
+  const cuotasData = Array.from({ length: 12 }, (_, i) => ({
+    jugadorId: jugador.id,
+    mes: i + 1,
+    anio: currentYear,
+    monto: 0,
+    fechaVencimiento: new Date(currentYear, i, 5)
+  }));
+
+  await prisma.cuota.createMany({ data: cuotasData });
+
+  return prisma.jugador.findUnique({
+    where: { id: jugador.id },
+    include: { cuotas: { orderBy: { mes: 'asc' } } }
+  });
 };
 
 const update = async (id, data, userId) => {

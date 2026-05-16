@@ -38,6 +38,9 @@ const getById = async (id) => {
 };
 
 const create = async (data) => {
+  const jugador = await prisma.jugador.findUnique({ where: { id: data.jugadorId } });
+  if (!jugador) throw new Error('Jugador no encontrado');
+
   const existing = await prisma.cuota.findUnique({
     where: {
       jugadorId_mes_anio: {
@@ -49,13 +52,17 @@ const create = async (data) => {
   });
 
   if (existing) {
-    throw new Error('Ya existe una cuota para este jugador en el período indicado');
+    // Actualizar cuota existente (auto-creada como placeholder con monto=0)
+    return prisma.cuota.update({
+      where: { id: existing.id },
+      data: {
+        monto: data.monto,
+        fechaVencimiento: new Date(data.fechaVencimiento)
+      }
+    });
   }
 
-  const jugador = await prisma.jugador.findUnique({ where: { id: data.jugadorId } });
-  if (!jugador) throw new Error('Jugador no encontrado');
-
-  const cuota = await prisma.cuota.create({
+  return prisma.cuota.create({
     data: {
       jugadorId: data.jugadorId,
       mes: data.mes,
@@ -64,8 +71,6 @@ const create = async (data) => {
       fechaVencimiento: new Date(data.fechaVencimiento)
     }
   });
-
-  return cuota;
 };
 
 const update = async (id, data) => {
@@ -113,7 +118,14 @@ const generarMensuales = async (mes, anio, monto) => {
       }
     });
 
-    if (!existing) {
+    if (existing) {
+      // Actualizar cuota placeholder (monto=0) con el monto real
+      const cuota = await prisma.cuota.update({
+        where: { id: existing.id },
+        data: { monto, fechaVencimiento }
+      });
+      cuotas.push(cuota);
+    } else {
       const cuota = await prisma.cuota.create({
         data: {
           jugadorId: jugador.id,
@@ -131,7 +143,13 @@ const generarMensuales = async (mes, anio, monto) => {
 };
 
 const crearParaJugador = async (jugadorId, mes, anio, monto) => {
-  const existing = await prisma.cuota.findUnique({
+  const jugador = await prisma.jugador.findUnique({ where: { id: jugadorId } });
+  if (!jugador) throw new Error('Jugador no encontrado');
+
+  const fechaVencimiento = new Date(anio, mes - 1, 5);
+
+  // Buscar si ya existe una cuota auto-creada (placeholder con monto=0)
+  let cuota = await prisma.cuota.findUnique({
     where: {
       jugadorId_mes_anio: {
         jugadorId,
@@ -141,31 +159,23 @@ const crearParaJugador = async (jugadorId, mes, anio, monto) => {
     }
   });
 
-  if (existing) {
-    throw new Error('Ya existe una cuota para este jugador en el período indicado');
+  if (cuota) {
+    // Actualizar monto de la cuota existente
+    cuota = await prisma.cuota.update({
+      where: { id: cuota.id },
+      data: { monto, fechaVencimiento }
+    });
+  } else {
+    cuota = await prisma.cuota.create({
+      data: { jugadorId, mes, anio, monto, fechaVencimiento }
+    });
   }
 
-  const jugador = await prisma.jugador.findUnique({ where: { id: jugadorId } });
-  if (!jugador) throw new Error('Jugador no encontrado');
-
-  const fechaVencimiento = new Date(anio, mes - 1, 5);
-
-  const cuota = await prisma.cuota.create({
-    data: {
-      jugadorId,
-      mes,
-      anio,
-      monto,
-      fechaVencimiento
-    }
-  });
-
-  // Si se crea la cuota, crear también un pago para marcarla como pagada
-  // Esto permite que la cuota figure inmediatamente como pagada en la UI
+  // Crear pago para marcarla como pagada
   const pago = await prisma.pago.create({
     data: {
       cuotaId: cuota.id,
-      monto: monto,
+      monto,
       fechaPago: new Date(),
       metodoPago: 'GENERADA_ADMIN',
       observacion: 'Pago automático al generar cuota'
@@ -180,7 +190,13 @@ const crearParaJugador = async (jugadorId, mes, anio, monto) => {
   await prisma.cuota.update({ where: { id: cuota.id }, data: { vencida } });
 
   // Devolver la cuota junto al pago creado
-  return { cuota: await prisma.cuota.findUnique({ where: { id: cuota.id }, include: { pagos: true, jugador: true } }), pago };
+  return {
+    cuota: await prisma.cuota.findUnique({
+      where: { id: cuota.id },
+      include: { pagos: true, jugador: true }
+    }),
+    pago
+  };
 };
 
 const getMorosos = async () => {
