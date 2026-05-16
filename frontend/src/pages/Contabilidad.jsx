@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Plus, Lock } from 'lucide-react';
-import { createIngreso, updateIngreso, createGasto, updateGasto } from '../api/contabilidad';
+import { Plus, Lock, CalendarDays } from 'lucide-react';
+import { createFecha, updateFecha, createIngreso, updateIngreso, createGasto, updateGasto } from '../api/contabilidad';
+import FechaList from '../components/contabilidad/FechaList';
+import FechaForm from '../components/contabilidad/FechaForm';
 import IngresoList from '../components/contabilidad/IngresoList';
 import IngresoForm from '../components/contabilidad/IngresoForm';
 import GastoList from '../components/contabilidad/GastoList';
@@ -11,7 +13,12 @@ import BalanceCard from '../components/contabilidad/BalanceCard';
 
 const Contabilidad = () => {
   const { isAdmin } = useAuth();
-  const [tab, setTab] = useState('ingresos');
+  const [tab, setTab] = useState('fechas');
+
+  // Fecha state
+  const [fechaModalOpen, setFechaModalOpen] = useState(false);
+  const [editingFecha, setEditingFecha] = useState(null);
+  const [fechaSaving, setFechaSaving] = useState(false);
 
   // Ingreso state
   const [modalOpen, setModalOpen] = useState(false);
@@ -40,6 +47,34 @@ const Contabilidad = () => {
       </div>
     );
   }
+
+  const handleFechaSubmit = async (data) => {
+    setFechaSaving(true);
+    try {
+      if (editingFecha) {
+        await updateFecha(editingFecha.id, data);
+      } else {
+        await createFecha(data);
+      }
+      setFechaModalOpen(false);
+      setEditingFecha(null);
+      setRefreshTrigger((t) => t + 1);
+    } catch (err) {
+      console.error('Error saving fecha:', err);
+    } finally {
+      setFechaSaving(false);
+    }
+  };
+
+  const handleEditFecha = (fecha) => {
+    setEditingFecha(fecha);
+    setFechaModalOpen(true);
+  };
+
+  const handleNewFecha = () => {
+    setEditingFecha(null);
+    setFechaModalOpen(true);
+  };
 
   const handleIngresoSubmit = async (data) => {
     setSaving(true);
@@ -110,6 +145,14 @@ const Contabilidad = () => {
       {/* Tab Buttons */}
       <div className="flex gap-2 animate-slide-up">
         <Button
+          variant={tab === 'fechas' ? 'default' : 'outline'}
+          onClick={() => setTab('fechas')}
+          className="gap-2"
+        >
+          <CalendarDays className="w-4 h-4" />
+          Fechas
+        </Button>
+        <Button
           variant={tab === 'ingresos' ? 'default' : 'outline'}
           onClick={() => setTab('ingresos')}
         >
@@ -130,11 +173,32 @@ const Contabilidad = () => {
       </div>
 
       {/* Tab Content */}
+      {tab === 'fechas' && (
+        <div className="space-y-4 animate-fade-in">
+          <div className="flex justify-end">
+            <Button onClick={handleNewFecha}>
+              <Plus className="w-4 h-4 mr-2" /> Nueva Fecha
+            </Button>
+          </div>
+          <FechaList
+            refreshTrigger={refreshTrigger}
+            onEditFecha={handleEditFecha}
+          />
+          <FechaForm
+            open={fechaModalOpen}
+            onOpenChange={setFechaModalOpen}
+            onSubmit={handleFechaSubmit}
+            initialData={editingFecha}
+            loading={fechaSaving}
+          />
+        </div>
+      )}
+
       {tab === 'ingresos' && (
         <div className="space-y-4 animate-fade-in">
           <div className="flex justify-end">
             <Button onClick={handleNewIngreso}>
-              <Plus className="w-4 h-4 mr-2" /> Nueva Fecha
+              <Plus className="w-4 h-4 mr-2" /> Nuevo Ingreso
             </Button>
           </div>
           <IngresoList onEdit={handleEditIngreso} refreshTrigger={refreshTrigger} />
