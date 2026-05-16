@@ -37,7 +37,7 @@ const FechaList = ({ refreshTrigger, onEditFecha }) => {
   const toggleExpand = (id) => setExpanded((p) => ({ ...p, [id]: !p[id] }));
 
   const handleDeleteFecha = async (id) => {
-    if (window.confirm('¿Eliminar esta fecha con todos sus ingresos y gastos?')) {
+    if (window.confirm('¿Eliminar este partido con todos sus ingresos y gastos?')) {
       try {
         await deleteFecha(id);
         setFechas((p) => p.filter((f) => f.id !== id));
@@ -119,7 +119,7 @@ const FechaList = ({ refreshTrigger, onEditFecha }) => {
     return (
       <div className="rounded-xl border border-border/50 bg-card p-12 text-center">
         <div className="spinner mx-auto mb-3" />
-        <p className="text-sm text-muted-foreground">Cargando fechas...</p>
+        <p className="text-sm text-muted-foreground">Cargando partidos...</p>
       </div>
     );
   }
@@ -128,8 +128,8 @@ const FechaList = ({ refreshTrigger, onEditFecha }) => {
     return (
       <div className="rounded-xl border border-border/50 bg-card p-12 text-center">
         <CalendarDays className="w-8 h-8 text-muted-foreground/50 mx-auto mb-3" />
-        <p className="text-muted-foreground font-medium">No hay fechas registradas</p>
-        <p className="text-sm text-muted-foreground/70 mt-1">Creá una nueva fecha para empezar</p>
+        <p className="text-muted-foreground font-medium">No hay partidos registrados</p>
+        <p className="text-sm text-muted-foreground/70 mt-1">Creá un nuevo partido para empezar</p>
       </div>
     );
   }

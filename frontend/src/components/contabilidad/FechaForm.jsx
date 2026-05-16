@@ -23,7 +23,7 @@ const FechaForm = ({ open, onOpenChange, onSubmit, initialData, loading }) => {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{initialData ? 'Editar Fecha' : 'Nueva Fecha'}</DialogTitle>
+          <DialogTitle>{initialData ? 'Editar Partido' : 'Nuevo Partido'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
@@ -43,7 +43,7 @@ const FechaForm = ({ open, onOpenChange, onSubmit, initialData, loading }) => {
               Cancelar
             </Button>
             <Button type="submit" disabled={loading || !titulo.trim()}>
-              {initialData ? 'Guardar' : 'Crear Fecha'}
+              {initialData ? 'Guardar' : 'Crear Partido'}
             </Button>
           </div>
         </form>

@@ -120,7 +120,7 @@ const Contabilidad = () => {
       {/* Tabs */}
       <div className="flex gap-2 animate-slide-up">
         <Button variant={tab === 'fechas' ? 'default' : 'outline'} onClick={() => setTab('fechas')} className="gap-2">
-          <CalendarDays className="w-4 h-4" /> Fechas
+          <CalendarDays className="w-4 h-4" /> Partidos
         </Button>
         <Button variant={tab === 'ingresos' ? 'default' : 'outline'} onClick={() => setTab('ingresos')}>Ingresos</Button>
         <Button variant={tab === 'gastos' ? 'default' : 'outline'} onClick={() => setTab('gastos')}>Gastos</Button>
@@ -132,7 +132,7 @@ const Contabilidad = () => {
         <div className="space-y-4 animate-fade-in">
           <div className="flex justify-end">
             <Button onClick={() => { setEditingFecha(null); setFechaModalOpen(true); }}>
-              <Plus className="w-4 h-4 mr-2" /> Nueva Fecha
+              <Plus className="w-4 h-4 mr-2" /> Nuevo Partido
             </Button>
           </div>
           <FechaList refreshTrigger={refreshTrigger} onEditFecha={(f) => { setEditingFecha(f); setFechaModalOpen(true); }} />
