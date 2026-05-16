@@ -13,3 +13,4 @@ export const updateGasto = (id, data) => apiClient.put(`/gastos/${id}`, data);
 export const deleteGasto = (id) => apiClient.delete(`/gastos/${id}`);
 
 export const getBalance = () => apiClient.get('/contabilidad/balance');
+export const getBalancePorFecha = () => apiClient.get('/contabilidad/balance-por-fecha');
