@@ -105,7 +105,7 @@ model HistorialCambios {
   jugador   Jugador? @relation(fields: [entidadId], references: [id], onDelete: Cascade)
 }
 
-model Fecha {
+model Partido {
   id        String   @id @default(uuid())
   titulo    String
   createdAt DateTime @default(now())
@@ -121,11 +121,10 @@ model Ingreso {
   monto       Decimal  @db.Decimal(10, 2)
   partidoId   String?
   fecha       DateTime @default(now())
-  fechaId     String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  fechaRel    Fecha?   @relation(fields: [fechaId], references: [id], onDelete: Cascade)
+  partido     Partido? @relation(fields: [partidoId], references: [id])
 }
 
 model Gasto {
@@ -134,9 +133,8 @@ model Gasto {
   monto       Decimal  @db.Decimal(10, 2)
   partidoId   String?
   fecha       DateTime @default(now())
-  fechaId     String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  fechaRel    Fecha?   @relation(fields: [fechaId], references: [id], onDelete: Cascade)
+  partido     Partido? @relation(fields: [partidoId], references: [id])
 }

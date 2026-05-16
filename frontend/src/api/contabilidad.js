@@ -15,8 +15,8 @@ export const deleteGasto = (id) => apiClient.delete(`/gastos/${id}`);
 export const getBalance = () => apiClient.get('/contabilidad/balance');
 export const getBalancePorFecha = () => apiClient.get('/contabilidad/balance-por-fecha');
 
-export const getFechas = () => apiClient.get('/fechas');
-export const getFecha = (id) => apiClient.get(`/fechas/${id}`);
-export const createFecha = (data) => apiClient.post('/fechas', data);
-export const updateFecha = (id, data) => apiClient.put(`/fechas/${id}`, data);
-export const deleteFecha = (id) => apiClient.delete(`/fechas/${id}`);
+export const getPartidos = () => apiClient.get('/partidos');
+export const getPartido = (id) => apiClient.get(`/partidos/${id}`);
+export const createPartido = (data) => apiClient.post('/partidos', data);
+export const updatePartido = (id, data) => apiClient.put(`/partidos/${id}`, data);
+export const deletePartido = (id) => apiClient.delete(`/partidos/${id}`);

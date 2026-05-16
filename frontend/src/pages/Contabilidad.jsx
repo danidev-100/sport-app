@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Plus, ArrowLeft, Lock, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
-import { createIngreso, updateIngreso, createGasto, updateGasto, createFecha, getFechas } from '../api/contabilidad';
+import { createIngreso, updateIngreso, createGasto, updateGasto, createPartido, getPartidos } from '../api/contabilidad';
 import IngresoList from '../components/contabilidad/IngresoList';
 import IngresoForm from '../components/contabilidad/IngresoForm';
 import GastoList from '../components/contabilidad/GastoList';
@@ -34,14 +34,15 @@ const Contabilidad = () => {
   const [gastoSaving, setGastoSaving] = useState(false);
 
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [errorMsg, setErrorMsg] = useState('');
 
   // Fetch partidos
   useEffect(() => {
     const fetchPartidos = async () => {
       setLoadingPartidos(true);
       try {
-        const res = await getFechas();
-        setPartidos(res.data?.fechas || []);
+        const res = await getPartidos();
+        setPartidos(res.data?.partidos || []);
       } catch (err) {
         console.error('Error fetching partidos:', err);
         setPartidos([]);
@@ -68,14 +69,18 @@ const Contabilidad = () => {
 
   const handlePartidoSubmit = async (data) => {
     setPartidoSaving(true);
+    setErrorMsg('');
     try {
-      const res = await createFecha(data);
-      const nuevoPartido = res.data?.fecha || res.data;
+      const res = await createPartido(data);
+      const nuevoPartido = res.data?.partido || res.data;
+      if (!nuevoPartido?.id) throw new Error('Respuesta inesperada del servidor');
       setPartidoModalOpen(false);
       setRefreshTrigger((t) => t + 1);
       setSelectedPartido(nuevoPartido);
       setTab('ingresos');
     } catch (err) {
+      const msg = err.response?.data?.message || err.message || 'Error al crear partido';
+      setErrorMsg(msg);
       console.error('Error creating partido:', err);
     } finally {
       setPartidoSaving(false);
@@ -152,6 +157,12 @@ const Contabilidad = () => {
           </Button>
         </div>
 
+        {errorMsg && (
+          <div className="rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm px-4 py-3">
+            {errorMsg}
+          </div>
+        )}
+
         {loadingPartidos ? (
           <div className="rounded-xl border border-border/50 bg-card p-12 text-center">
             <div className="spinner mx-auto mb-3" />
@@ -221,6 +232,12 @@ const Contabilidad = () => {
           <Plus className="w-4 h-4 mr-2" /> Nuevo Partido
         </Button>
       </div>
+
+      {errorMsg && (
+        <div className="rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm px-4 py-3">
+          {errorMsg}
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-2 animate-slide-up">

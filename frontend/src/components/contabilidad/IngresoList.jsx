@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getIngresos, deleteIngreso } from '../../api/contabilidad';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   Table,
   TableHeader,
@@ -15,16 +14,12 @@ import { Pencil, Trash2, Receipt } from 'lucide-react';
 const IngresoList = ({ onEdit, refreshTrigger, partidoId }) => {
   const [ingresos, setIngresos] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [fechaDesde, setFechaDesde] = useState('');
-  const [fechaHasta, setFechaHasta] = useState('');
 
   useEffect(() => {
     const fetchIngresos = async () => {
       setLoading(true);
       try {
         const params = {};
-        if (fechaDesde) params.fechaDesde = fechaDesde;
-        if (fechaHasta) params.fechaHasta = fechaHasta;
         if (partidoId) params.partidoId = partidoId;
         const res = await getIngresos(params);
         setIngresos(res.data?.ingresos || []);
@@ -36,7 +31,7 @@ const IngresoList = ({ onEdit, refreshTrigger, partidoId }) => {
       }
     };
     fetchIngresos();
-  }, [fechaDesde, fechaHasta, partidoId, refreshTrigger]);
+  }, [partidoId, refreshTrigger]);
 
   const handleDelete = async (ingreso) => {
     if (window.confirm('¿Eliminar este ingreso?')) {
@@ -70,28 +65,6 @@ const IngresoList = ({ onEdit, refreshTrigger, partidoId }) => {
 
   return (
     <div className="space-y-4">
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3 items-end">
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Desde</label>
-          <Input
-            type="date"
-            value={fechaDesde}
-            onChange={(e) => setFechaDesde(e.target.value)}
-            className="w-44"
-          />
-        </div>
-        <div className="space-y-1">
-          <label className="text-xs font-medium text-muted-foreground">Hasta</label>
-          <Input
-            type="date"
-            value={fechaHasta}
-            onChange={(e) => setFechaHasta(e.target.value)}
-            className="w-44"
-          />
-        </div>
-      </div>
-
       {/* Content */}
       {ingresos.length === 0 ? (
         <div className="rounded-xl border border-border/50 bg-card p-12 text-center">
