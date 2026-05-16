@@ -10,13 +10,12 @@ const getMetricas = async (req, res) => {
     });
     const totalIngresos = ingresos.reduce((sum, p) => sum + parseFloat(p.monto), 0);
 
-    // Cuotas vencidas sin pagar → morosos reales
-    const cuotasVencidas = await prisma.cuota.findMany({
-      where: { vencida: true },
+    // Cuotas impagas (con o sin vencimiento)
+    const cuotasImpagas = await prisma.cuota.findMany({
+      where: { pagos: { none: {} } },
       include: { pagos: { select: { id: true } } }
     });
-    const cuotasSinPago = cuotasVencidas.filter(c => c.pagos.length === 0);
-    const totalMorosos = [...new Set(cuotasSinPago.map(c => c.jugadorId))].length;
+    const totalMorosos = [...new Set(cuotasImpagas.map(c => c.jugadorId))].length;
 
     res.json({
       totalJugadores,
@@ -44,7 +43,7 @@ const getCuotasGrafico = async (req, res) => {
       });
 
       const pagadasCount = cuotas.filter(c => c.pagos.length > 0).length;
-      const pendientesCount = cuotas.filter(c => c.vencida && c.pagos.length === 0).length;
+      const pendientesCount = cuotas.filter(c => c.pagos.length === 0).length;
 
       pagadas.push(pagadasCount);
       pendientes.push(pendientesCount);
@@ -84,9 +83,9 @@ const getRecientes = async (req, res) => {
 
 const getMorosos = async (req, res) => {
   try {
-    // Cuotas vencidas SIN pago asociado
+    // Cuotas impagas (sin pago registrado, estén vencidas o no)
     const cuotasAdeudadas = await prisma.cuota.findMany({
-      where: { vencida: true },
+      where: { pagos: { none: {} } },
       include: {
         jugador: { select: { id: true, nombre: true, categoria: true } },
         pagos: { select: { id: true } }
@@ -97,8 +96,6 @@ const getMorosos = async (req, res) => {
     const CAT_ORDER = ['C7', 'C11', 'C13', 'C15', 'C17', 'C20', 'PRIMERA', 'SENIOR', 'VETERANO'];
 
     for (const cuota of cuotasAdeudadas) {
-      if (cuota.pagos.length > 0) continue;
-
       const jugadorId = cuota.jugadorId;
       if (!morososMap[jugadorId]) {
         morososMap[jugadorId] = {
