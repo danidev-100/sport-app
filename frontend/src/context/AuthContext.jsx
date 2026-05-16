@@ -46,7 +46,7 @@ export const AuthProvider = ({ children }) => {
       setUser(userData);
       return response.data;
     } catch (err) {
-      const message = err.response?.data?.error || 'Error al iniciar sesión';
+      const message = err.response?.data?.message || err.response?.data?.error || 'Error al iniciar sesión';
       setError(message);
       throw new Error(message);
     } finally {
@@ -65,7 +65,7 @@ export const AuthProvider = ({ children }) => {
       setUser(userData);
       return response.data;
     } catch (err) {
-      const message = err.response?.data?.error || 'Error al registrarse';
+      const message = err.response?.data?.message || err.response?.data?.error || 'Error al registrarse';
       setError(message);
       throw new Error(message);
     } finally {
