@@ -10,10 +10,13 @@ const getMetricas = async (req, res) => {
     });
     const totalIngresos = ingresos.reduce((sum, p) => sum + parseFloat(p.monto), 0);
 
+    // Cuotas vencidas sin pagar → morosos reales
     const cuotasVencidas = await prisma.cuota.findMany({
-      where: { vencida: true }
+      where: { vencida: true },
+      include: { pagos: { select: { id: true } } }
     });
-    const totalMorosos = [...new Set(cuotasVencidas.map(c => c.jugadorId))].length;
+    const cuotasSinPago = cuotasVencidas.filter(c => c.pagos.length === 0);
+    const totalMorosos = [...new Set(cuotasSinPago.map(c => c.jugadorId))].length;
 
     res.json({
       totalJugadores,
@@ -36,11 +39,12 @@ const getCuotasGrafico = async (req, res) => {
 
     for (const mes of meses) {
       const cuotas = await prisma.cuota.findMany({
-        where: { mes, anio }
+        where: { mes, anio },
+        include: { pagos: { select: { id: true } } }
       });
 
-      const pagadasCount = cuotas.filter(c => !c.vencida).length;
-      const pendientesCount = cuotas.filter(c => c.vencida).length;
+      const pagadasCount = cuotas.filter(c => c.pagos.length > 0).length;
+      const pendientesCount = cuotas.filter(c => c.vencida && c.pagos.length === 0).length;
 
       pagadas.push(pagadasCount);
       pendientes.push(pendientesCount);
@@ -80,14 +84,20 @@ const getRecientes = async (req, res) => {
 
 const getMorosos = async (req, res) => {
   try {
-    const cuotasVencidas = await prisma.cuota.findMany({
+    // Cuotas vencidas SIN pago asociado
+    const cuotasAdeudadas = await prisma.cuota.findMany({
       where: { vencida: true },
-      include: { jugador: { select: { id: true, nombre: true } } }
+      include: {
+        jugador: { select: { id: true, nombre: true } },
+        pagos: { select: { id: true } }
+      }
     });
 
     const morososMap = {};
 
-    for (const cuota of cuotasVencidas) {
+    for (const cuota of cuotasAdeudadas) {
+      if (cuota.pagos.length > 0) continue; // ya fue pagada, saltar
+
       const jugadorId = cuota.jugadorId;
       if (!morososMap[jugadorId]) {
         morososMap[jugadorId] = {

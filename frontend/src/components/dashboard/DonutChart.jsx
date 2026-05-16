@@ -74,15 +74,7 @@ const DonutChart = ({ data, loading }) => {
     { name: 'Pendientes', value: pendientes, color: 'hsl(0 70% 45%)' },
   ].filter((d) => d.value > 0);
 
-  if (pieData.length === 0) {
-    return (
-      <div className="rounded-xl border border-border/50 bg-card p-6">
-        <div className="flex items-center justify-center h-56 text-muted-foreground text-sm">
-          Sin cuotas para este mes
-        </div>
-      </div>
-    );
-  }
+  const noData = pieData.length === 0;
 
   return (
     <div className="rounded-xl border border-border/50 bg-card p-6 hover:border-border-light transition-all duration-300">
@@ -111,47 +103,55 @@ const DonutChart = ({ data, loading }) => {
         </div>
       </div>
 
-      <div className="relative flex items-center justify-center py-4">
-        <ResponsiveContainer width="100%" height={240}>
-          <PieChart>
-            <Pie
-              data={pieData}
-              cx="50%"
-              cy="50%"
-              innerRadius={72}
-              outerRadius={100}
-              paddingAngle={3}
-              dataKey="value"
-              strokeWidth={0}
-              animationBegin={100}
-              animationDuration={600}
-            >
-              {pieData.map((entry, i) => (
-                <Cell
-                  key={i}
-                  fill={entry.color}
-                  className="drop-shadow-sm"
-                />
-              ))}
-            </Pie>
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
-          </PieChart>
-        </ResponsiveContainer>
-        <CenterLabel pagadas={pagadas} total={total} pct={pct} />
-      </div>
+      {noData ? (
+        <div className="flex items-center justify-center h-56 text-muted-foreground text-sm">
+          Sin cuotas para este mes
+        </div>
+      ) : (
+        <>
+          <div className="relative flex items-center justify-center py-4">
+            <ResponsiveContainer width="100%" height={240}>
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={72}
+                  outerRadius={100}
+                  paddingAngle={3}
+                  dataKey="value"
+                  strokeWidth={0}
+                  animationBegin={100}
+                  animationDuration={600}
+                >
+                  {pieData.map((entry, i) => (
+                    <Cell
+                      key={i}
+                      fill={entry.color}
+                      className="drop-shadow-sm"
+                    />
+                  ))}
+                </Pie>
+                <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
+              </PieChart>
+            </ResponsiveContainer>
+            <CenterLabel pagadas={pagadas} total={total} pct={pct} />
+          </div>
 
-      <div className="flex items-center justify-center gap-6 pt-2">
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'hsl(142.1 70% 42%)' }} />
-          <span className="text-xs text-muted-foreground">Pagadas</span>
-          <span className="text-xs font-semibold text-foreground">{pagadas}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'hsl(0 70% 45%)' }} />
-          <span className="text-xs text-muted-foreground">Pendientes</span>
-          <span className="text-xs font-semibold text-foreground">{pendientes}</span>
-        </div>
-      </div>
+          <div className="flex items-center justify-center gap-6 pt-2">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'hsl(142.1 70% 42%)' }} />
+              <span className="text-xs text-muted-foreground">Pagadas</span>
+              <span className="text-xs font-semibold text-foreground">{pagadas}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: 'hsl(0 70% 45%)' }} />
+              <span className="text-xs text-muted-foreground">Pendientes</span>
+              <span className="text-xs font-semibold text-foreground">{pendientes}</span>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };

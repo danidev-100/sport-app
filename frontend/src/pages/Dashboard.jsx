@@ -1,21 +1,27 @@
 import { useState, useEffect } from 'react';
+import { ChevronDown } from 'lucide-react';
 import apiClient from '../api/apiClient';
 import MetricasCards from '../components/dashboard/MetricasCards';
 import DonutChart from '../components/dashboard/DonutChart';
 import RecientesList from '../components/dashboard/RecientesList';
 
+const CURRENT_YEAR = new Date().getFullYear();
+const YEARS = Array.from({ length: 5 }, (_, i) => CURRENT_YEAR - 2 + i); // últimos 2, actual, próximos 2
+
 const Dashboard = () => {
   const [metricas, setMetricas] = useState(null);
   const [chartData, setChartData] = useState(null);
   const [recientes, setRecientes] = useState([]);
+  const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
       try {
         const [metricasRes, chartRes, recientesRes] = await Promise.all([
           apiClient.get('/dashboard/metricas'),
-          apiClient.get(`/dashboard/cuotas-grafico?anio=${new Date().getFullYear()}`),
+          apiClient.get(`/dashboard/cuotas-grafico?anio=${selectedYear}`),
           apiClient.get('/jugadores/recientes?limit=5')
         ]);
         setMetricas(metricasRes.data);
@@ -43,7 +49,7 @@ const Dashboard = () => {
       }
     };
     fetchData();
-  }, []);
+  }, [selectedYear]);
 
   return (
     <div className="space-y-6 md:space-y-8">
@@ -55,9 +61,18 @@ const Dashboard = () => {
             Panorama general del club
           </p>
         </div>
-        <span className="text-sm text-muted-foreground bg-muted/40 px-3 py-1 rounded-full border border-border/50">
-          {new Date().getFullYear()}
-        </span>
+        <div className="relative">
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(Number(e.target.value))}
+            className="appearance-none rounded-lg border border-border/50 bg-muted/40 px-3 py-1.5 pr-8 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors cursor-pointer focus:outline-none focus:ring-1 focus:ring-ring"
+          >
+            {YEARS.map((y) => (
+              <option key={y} value={y} className="bg-card">{y}</option>
+            ))}
+          </select>
+          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+        </div>
       </div>
 
       {/* Metrics */}
