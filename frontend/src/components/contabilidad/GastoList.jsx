@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/table';
 import { Pencil, Trash2, Receipt } from 'lucide-react';
 
-const GastoList = ({ onEdit, refreshTrigger }) => {
+const GastoList = ({ onEdit, refreshTrigger, partidoId }) => {
   const [gastos, setGastos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [fechaDesde, setFechaDesde] = useState('');
@@ -25,6 +25,7 @@ const GastoList = ({ onEdit, refreshTrigger }) => {
         const params = {};
         if (fechaDesde) params.fechaDesde = fechaDesde;
         if (fechaHasta) params.fechaHasta = fechaHasta;
+        if (partidoId) params.partidoId = partidoId;
         const res = await getGastos(params);
         setGastos(res.data?.gastos || []);
       } catch (err) {
@@ -35,7 +36,7 @@ const GastoList = ({ onEdit, refreshTrigger }) => {
       }
     };
     fetchGastos();
-  }, [fechaDesde, fechaHasta, refreshTrigger]);
+  }, [fechaDesde, fechaHasta, partidoId, refreshTrigger]);
 
   const handleDelete = async (gasto) => {
     if (window.confirm('¿Eliminar este gasto?')) {

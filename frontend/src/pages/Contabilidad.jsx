@@ -1,17 +1,27 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Plus, Lock } from 'lucide-react';
-import { createIngreso, updateIngreso, createGasto, updateGasto } from '../api/contabilidad';
+import { Plus, ArrowLeft, Lock, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
+import { createIngreso, updateIngreso, createGasto, updateGasto, createFecha, getFechas } from '../api/contabilidad';
 import IngresoList from '../components/contabilidad/IngresoList';
 import IngresoForm from '../components/contabilidad/IngresoForm';
 import GastoList from '../components/contabilidad/GastoList';
 import GastoForm from '../components/contabilidad/GastoForm';
-import BalanceCard from '../components/contabilidad/BalanceCard';
+import FechaForm from '../components/contabilidad/FechaForm';
+import PartidoBalance from '../components/contabilidad/PartidoBalance';
 
 const Contabilidad = () => {
   const { isAdmin } = useAuth();
   const [tab, setTab] = useState('ingresos');
+
+  // Partido list state
+  const [partidos, setPartidos] = useState([]);
+  const [selectedPartido, setSelectedPartido] = useState(null);
+  const [loadingPartidos, setLoadingPartidos] = useState(true);
+
+  // Partido form state
+  const [partidoModalOpen, setPartidoModalOpen] = useState(false);
+  const [partidoSaving, setPartidoSaving] = useState(false);
 
   // Ingreso state
   const [modalOpen, setModalOpen] = useState(false);
@@ -24,6 +34,23 @@ const Contabilidad = () => {
   const [gastoSaving, setGastoSaving] = useState(false);
 
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  // Fetch partidos
+  useEffect(() => {
+    const fetchPartidos = async () => {
+      setLoadingPartidos(true);
+      try {
+        const res = await getFechas();
+        setPartidos(res.data?.fechas || []);
+      } catch (err) {
+        console.error('Error fetching partidos:', err);
+        setPartidos([]);
+      } finally {
+        setLoadingPartidos(false);
+      }
+    };
+    fetchPartidos();
+  }, [refreshTrigger]);
 
   if (!isAdmin) {
     return (
@@ -39,13 +66,32 @@ const Contabilidad = () => {
     );
   }
 
+  const handlePartidoSubmit = async (data) => {
+    setPartidoSaving(true);
+    try {
+      const res = await createFecha(data);
+      const nuevoPartido = res.data?.fecha || res.data;
+      setPartidoModalOpen(false);
+      setRefreshTrigger((t) => t + 1);
+      setSelectedPartido(nuevoPartido);
+      setTab('ingresos');
+    } catch (err) {
+      console.error('Error creating partido:', err);
+    } finally {
+      setPartidoSaving(false);
+    }
+  };
+
   const handleIngresoSubmit = async (data) => {
     setSaving(true);
     try {
+      const payload = { ...data };
+      if (selectedPartido) payload.partidoId = selectedPartido.id;
+
       if (editingIngreso) {
-        await updateIngreso(editingIngreso.id, data);
+        await updateIngreso(editingIngreso.id, payload);
       } else {
-        await createIngreso(data);
+        await createIngreso(payload);
       }
       setModalOpen(false);
       setEditingIngreso(null);
@@ -65,10 +111,13 @@ const Contabilidad = () => {
   const handleGastoSubmit = async (data) => {
     setGastoSaving(true);
     try {
+      const payload = { ...data };
+      if (selectedPartido) payload.partidoId = selectedPartido.id;
+
       if (editingGasto) {
-        await updateGasto(editingGasto.id, data);
+        await updateGasto(editingGasto.id, payload);
       } else {
-        await createGasto(data);
+        await createGasto(payload);
       }
       setGastoModalOpen(false);
       setEditingGasto(null);
@@ -85,11 +134,92 @@ const Contabilidad = () => {
     setGastoModalOpen(true);
   };
 
+  const formatCurrency = (value) =>
+    Number(value).toLocaleString('es-AR', { style: 'currency', currency: 'ARS' });
+
+  // ──────────── PARTIDO LIST VIEW ────────────
+  if (!selectedPartido) {
+    return (
+      <div className="space-y-6">
+        <div className="animate-fade-in">
+          <h1 className="text-2xl font-bold tracking-tight">Contabilidad</h1>
+          <p className="text-sm text-muted-foreground mt-1">Gestión financiera del club</p>
+        </div>
+
+        <div className="flex justify-end">
+          <Button onClick={() => setPartidoModalOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" /> Nuevo Partido
+          </Button>
+        </div>
+
+        {loadingPartidos ? (
+          <div className="rounded-xl border border-border/50 bg-card p-12 text-center">
+            <div className="spinner mx-auto mb-3" />
+            <p className="text-sm text-muted-foreground">Cargando partidos...</p>
+          </div>
+        ) : partidos.length === 0 ? (
+          <div className="rounded-xl border border-border/50 bg-card p-12 text-center">
+            <Calendar className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+            <p className="text-muted-foreground font-medium mb-1">No hay partidos todavía</p>
+            <p className="text-sm text-muted-foreground/70">Creá un partido para empezar</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {partidos.map((p) => {
+              const totalIng = (p.ingresos || []).reduce((s, i) => s + Number(i.monto), 0);
+              const totalGas = (p.gastos || []).reduce((s, g) => s + Number(g.monto), 0);
+              const balance = totalIng - totalGas;
+              const balColor = balance > 0 ? 'text-green-500' : balance < 0 ? 'text-red-500' : 'text-muted-foreground';
+
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => { setSelectedPartido(p); setTab('ingresos'); }}
+                  className="text-left bg-card border border-border/50 rounded-xl p-5 hover:border-primary/30 hover:shadow-sm transition-all space-y-3"
+                >
+                  <h3 className="font-semibold text-base truncate">{p.titulo}</h3>
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <span className="flex items-center gap-1">
+                      <TrendingUp className="w-3.5 h-3.5 text-green-500" />
+                      {p.ingresos?.length || 0}
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <TrendingDown className="w-3.5 h-3.5 text-red-500" />
+                      {p.gastos?.length || 0}
+                    </span>
+                  </div>
+                  <p className={`text-lg font-bold ${balColor}`}>
+                    {balance >= 0 ? '+' : ''}{formatCurrency(balance)}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        <FechaForm open={partidoModalOpen} onOpenChange={setPartidoModalOpen}
+          onSubmit={handlePartidoSubmit} loading={partidoSaving} />
+      </div>
+    );
+  }
+
+  // ──────────── PARTIDO DETAIL VIEW ────────────
   return (
     <div className="space-y-6">
-      <div className="animate-fade-in">
-        <h1 className="text-2xl font-bold tracking-tight">Contabilidad</h1>
-        <p className="text-sm text-muted-foreground mt-1">Gestión financiera del club</p>
+      {/* Header */}
+      <div className="flex items-center justify-between animate-fade-in">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="sm" className="h-8 px-2" onClick={() => setSelectedPartido(null)}>
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">{selectedPartido.titulo}</h1>
+            <p className="text-sm text-muted-foreground mt-1">Gestión financiera del partido</p>
+          </div>
+        </div>
+        <Button onClick={() => setPartidoModalOpen(true)}>
+          <Plus className="w-4 h-4 mr-2" /> Nuevo Partido
+        </Button>
       </div>
 
       {/* Tabs */}
@@ -107,7 +237,7 @@ const Contabilidad = () => {
               <Plus className="w-4 h-4 mr-2" /> Nuevo Ingreso
             </Button>
           </div>
-          <IngresoList onEdit={handleEditIngreso} refreshTrigger={refreshTrigger} />
+          <IngresoList onEdit={handleEditIngreso} refreshTrigger={refreshTrigger} partidoId={selectedPartido.id} />
           <IngresoForm open={modalOpen} onOpenChange={setModalOpen}
             onSubmit={handleIngresoSubmit} initialData={editingIngreso} loading={saving} />
         </div>
@@ -121,7 +251,7 @@ const Contabilidad = () => {
               <Plus className="w-4 h-4 mr-2" /> Nuevo Gasto
             </Button>
           </div>
-          <GastoList onEdit={handleEditGasto} refreshTrigger={refreshTrigger} />
+          <GastoList onEdit={handleEditGasto} refreshTrigger={refreshTrigger} partidoId={selectedPartido.id} />
           <GastoForm open={gastoModalOpen} onOpenChange={setGastoModalOpen}
             onSubmit={handleGastoSubmit} initialData={editingGasto} loading={gastoSaving} />
         </div>
@@ -130,9 +260,12 @@ const Contabilidad = () => {
       {/* Balance tab */}
       {tab === 'balance' && (
         <div className="animate-fade-in">
-          <BalanceCard refreshTrigger={refreshTrigger} />
+          <PartidoBalance partidoId={selectedPartido.id} refreshTrigger={refreshTrigger} />
         </div>
       )}
+
+      <FechaForm open={partidoModalOpen} onOpenChange={setPartidoModalOpen}
+        onSubmit={handlePartidoSubmit} loading={partidoSaving} />
     </div>
   );
 };
