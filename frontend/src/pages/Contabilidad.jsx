@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Plus, Lock, CalendarDays } from 'lucide-react';
-import { createFecha, updateFecha, createIngreso, updateIngreso, createGasto, updateGasto } from '../api/contabilidad';
+import { createIngreso, updateIngreso, createGasto, updateGasto } from '../api/contabilidad';
 import FechaList from '../components/contabilidad/FechaList';
 import FechaForm from '../components/contabilidad/FechaForm';
 import IngresoList from '../components/contabilidad/IngresoList';
@@ -15,9 +15,8 @@ const Contabilidad = () => {
   const { isAdmin } = useAuth();
   const [tab, setTab] = useState('fechas');
 
-  // Fecha state
+  // Fecha form
   const [fechaModalOpen, setFechaModalOpen] = useState(false);
-  const [editingFecha, setEditingFecha] = useState(null);
   const [fechaSaving, setFechaSaving] = useState(false);
 
   // Ingreso state
@@ -51,29 +50,14 @@ const Contabilidad = () => {
   const handleFechaSubmit = async (data) => {
     setFechaSaving(true);
     try {
-      if (editingFecha) {
-        await updateFecha(editingFecha.id, data);
-      } else {
-        await createFecha(data);
-      }
+      await createIngreso(data);
       setFechaModalOpen(false);
-      setEditingFecha(null);
       setRefreshTrigger((t) => t + 1);
     } catch (err) {
-      console.error('Error saving fecha:', err);
+      console.error('Error creating fecha:', err);
     } finally {
       setFechaSaving(false);
     }
-  };
-
-  const handleEditFecha = (fecha) => {
-    setEditingFecha(fecha);
-    setFechaModalOpen(true);
-  };
-
-  const handleNewFecha = () => {
-    setEditingFecha(null);
-    setFechaModalOpen(true);
   };
 
   const handleIngresoSubmit = async (data) => {
@@ -176,19 +160,15 @@ const Contabilidad = () => {
       {tab === 'fechas' && (
         <div className="space-y-4 animate-fade-in">
           <div className="flex justify-end">
-            <Button onClick={handleNewFecha}>
+            <Button onClick={() => setFechaModalOpen(true)}>
               <Plus className="w-4 h-4 mr-2" /> Nueva Fecha
             </Button>
           </div>
-          <FechaList
-            refreshTrigger={refreshTrigger}
-            onEditFecha={handleEditFecha}
-          />
+          <FechaList refreshTrigger={refreshTrigger} />
           <FechaForm
             open={fechaModalOpen}
             onOpenChange={setFechaModalOpen}
             onSubmit={handleFechaSubmit}
-            initialData={editingFecha}
             loading={fechaSaving}
           />
         </div>

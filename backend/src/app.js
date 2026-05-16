@@ -30,7 +30,6 @@ mount('/cuotas', cuotaRoutes);
 mount('/pagos', pagoRoutes);
 mount('/dashboard', dashboardRoutes);
 mount('/users', userRoutes);
-mount('/fechas', require('./routes/fechas'));
 mount('/ingresos', require('./routes/ingresos'));
 mount('/gastos', require('./routes/gastos'));
 mount('/contabilidad', require('./routes/contabilidad'));

@@ -1,60 +1,66 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 
-const FechaForm = ({ open, onOpenChange, onSubmit, initialData, loading }) => {
-  const [titulo, setTitulo] = useState('');
-  const [fecha, setFecha] = useState('');
-
-  useEffect(() => {
-    if (open) {
-      if (initialData) {
-        setTitulo(initialData.titulo || '');
-        setFecha(
-          initialData.fecha
-            ? new Date(initialData.fecha).toISOString().split('T')[0]
-            : new Date().toISOString().split('T')[0]
-        );
-      } else {
-        setTitulo('');
-        setFecha(new Date().toISOString().split('T')[0]);
-      }
-    }
-  }, [open, initialData]);
+const FechaForm = ({ open, onOpenChange, onSubmit, loading }) => {
+  const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
+  const [descripcion, setDescripcion] = useState('');
+  const [monto, setMonto] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!titulo) return;
-    onSubmit({ titulo, fecha });
+    if (!fecha || !descripcion || !monto) return;
+    onSubmit({ fecha, descripcion, monto: parseFloat(monto) });
+    setDescripcion('');
+    setMonto('');
+    setFecha(new Date().toISOString().split('T')[0]);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{initialData ? 'Editar Fecha' : 'Nueva Fecha'}</DialogTitle>
+          <DialogTitle>Nueva Fecha</DialogTitle>
+          <DialogDescription>
+            Creá un nuevo movimiento para esta fecha
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-1.5">
             <label className="text-sm font-medium text-muted-foreground">
-              Título
-            </label>
-            <Input
-              value={titulo}
-              onChange={(e) => setTitulo(e.target.value)}
-              placeholder="Ej: Partido vs River Plate"
-              required
-            />
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-muted-foreground">
-              Fecha del evento
+              Fecha
             </label>
             <Input
               type="date"
               value={fecha}
               onChange={(e) => setFecha(e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-muted-foreground">
+              Descripción
+            </label>
+            <Input
+              value={descripcion}
+              onChange={(e) => setDescripcion(e.target.value)}
+              placeholder="Ej: Entradas partido vs River"
+              required
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium text-muted-foreground">
+              Monto
+            </label>
+            <Input
+              type="number"
+              step="0.01"
+              min="0.01"
+              value={monto}
+              onChange={(e) => setMonto(e.target.value)}
+              placeholder="15000.00"
+              required
             />
           </div>
           <div className="flex justify-end gap-3 pt-2">
@@ -62,7 +68,7 @@ const FechaForm = ({ open, onOpenChange, onSubmit, initialData, loading }) => {
               Cancelar
             </Button>
             <Button type="submit" disabled={loading}>
-              {initialData ? 'Guardar' : 'Crear Fecha'}
+              Crear Fecha
             </Button>
           </div>
         </form>
