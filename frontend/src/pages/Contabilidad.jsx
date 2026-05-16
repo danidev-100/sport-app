@@ -134,7 +134,7 @@ const Contabilidad = () => {
         <div className="space-y-4 animate-fade-in">
           <div className="flex justify-end">
             <Button onClick={handleNewIngreso}>
-              <Plus className="w-4 h-4 mr-2" /> Nuevo Ingreso
+              <Plus className="w-4 h-4 mr-2" /> Nueva Fecha
             </Button>
           </div>
           <IngresoList onEdit={handleEditIngreso} refreshTrigger={refreshTrigger} />
