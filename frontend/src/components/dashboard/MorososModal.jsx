@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { AlertTriangle, Users, ChevronDown, ChevronRight, DollarSign } from 'lucide-react';
+import { AlertTriangle, Users, ChevronDown, ChevronRight, DollarSign, FileDown } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
+import { downloadMorososPDF } from '../../utils/pdfGenerator';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const MESES = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
@@ -51,9 +52,21 @@ const MorososModal = ({ open, onOpenChange, morososData, loading }) => {
                       {cat.cantidad} jugador{cat.cantidad !== 1 ? 'es' : ''}
                     </span>
                   </div>
-                  <span className="text-sm font-bold text-rose-500">
-                    {formatCurrency(cat.total)}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        downloadMorososPDF(cat.categoria, cat.jugadores);
+                      }}
+                      className="p-1.5 rounded-lg hover:bg-rose-500/10 text-muted-foreground hover:text-rose-500 transition-colors"
+                      title={`Descargar PDF - ${cat.categoria}`}
+                    >
+                      <FileDown className="w-4 h-4" />
+                    </button>
+                    <span className="text-sm font-bold text-rose-500">
+                      {formatCurrency(cat.total)}
+                    </span>
+                  </div>
                 </button>
 
                 {/* Expanded players table */}

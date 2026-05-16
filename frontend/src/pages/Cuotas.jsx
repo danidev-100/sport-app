@@ -13,17 +13,7 @@ import {
   TableCell,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
-import {
-  Command,
-  CommandInput,
-  CommandList,
-  CommandEmpty,
-  CommandGroup,
-  CommandItem,
-} from '@/components/ui/command';
-import { cn } from '@/lib/utils';
-import { CreditCard, Search, AlertTriangle, Plus, CheckCircle, Users, DollarSign, ChevronsUpDown, Check } from 'lucide-react';
+import { CreditCard, Search, AlertTriangle, Plus, CheckCircle, Users, DollarSign } from 'lucide-react';
 import { formatCurrency } from '../utils/formatters';
 
 const filterMeses = [
@@ -146,8 +136,6 @@ const Cuotas = () => {
   const [filters, setFilters] = useState({ playerSearch: '', anio: '' });
   const [searchInput, setSearchInput] = useState('');
   const [genData, setGenData] = useState({ jugadorId: '', mes: '', anio: '', monto: '' });
-  const [jugadorSearch, setJugadorSearch] = useState('');
-  const [jugadorPopoverOpen, setJugadorPopoverOpen] = useState(false);
   const [payingId, setPayingId] = useState(null);
 
   // ── Fetch everything on mount ────────────────────
@@ -249,13 +237,13 @@ const Cuotas = () => {
     ) || null;
   }, [filters.playerSearch, jugadores]);
 
-  const filteredJugadores = useMemo(() => {
-    if (!jugadorSearch) return jugadores.filter((j) => j.activo);
-    const q = jugadorSearch.toLowerCase();
-    return jugadores.filter(
-      (j) => j.activo && j.nombre?.toLowerCase().includes(q)
-    );
-  }, [jugadorSearch, jugadores]);
+  // Auto-sync the searched player into the generate form
+  useEffect(() => {
+    setGenData((prev) => ({
+      ...prev,
+      jugadorId: matchedPlayer ? String(matchedPlayer.id) : '',
+    }));
+  }, [matchedPlayer]);
 
   const playerMonths = useMemo(() => {
     if (!filters.playerSearch) return null;
@@ -366,55 +354,22 @@ const Cuotas = () => {
             <h2 className="text-sm font-semibold">Generar Cuota</h2>
           </div>
           <form onSubmit={handleGenerar}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-              <Popover open={jugadorPopoverOpen} onOpenChange={setJugadorPopoverOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={jugadorPopoverOpen}
-                    className="w-full justify-between font-normal"
-                  >
-                    {genData.jugadorId
-                      ? jugadores.find((j) => String(j.id) === genData.jugadorId)?.nombre
-                      : 'Jugador'}
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                  <Command>
-                    <CommandInput
-                      placeholder="Buscar jugador..."
-                      value={jugadorSearch}
-                      onValueChange={setJugadorSearch}
-                    />
-                    <CommandList>
-                      <CommandEmpty>No se encontró el jugador</CommandEmpty>
-                      <CommandGroup>
-                        {filteredJugadores.map((j) => (
-                          <CommandItem
-                            key={j.id}
-                            value={j.nombre}
-                            onSelect={() => {
-                              setGenData((prev) => ({ ...prev, jugadorId: String(j.id) }));
-                              setJugadorPopoverOpen(false);
-                              setJugadorSearch('');
-                            }}
-                          >
-                            <Check
-                              className={cn(
-                                'mr-2 h-4 w-4',
-                                String(j.id) === genData.jugadorId ? 'opacity-100' : 'opacity-0'
-                              )}
-                            />
-                            {j.nombre}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+            {matchedPlayer ? (
+              <div className="flex items-center gap-2 mb-4 px-1">
+                <Users className="w-4 h-4 text-primary" />
+                <span className="text-sm font-medium">
+                  Generar cuota para: <strong>{matchedPlayer.nombre}</strong>
+                </span>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 mb-4 px-1">
+                <Search className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">
+                  Buscá un jugador arriba para generar una cuota
+                </span>
+              </div>
+            )}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
 
               <Select
                 value={genData.mes || undefined}
@@ -447,7 +402,7 @@ const Cuotas = () => {
                 required
               />
             </div>
-            <Button type="submit" disabled={generating} size="sm">
+            <Button type="submit" disabled={generating || !matchedPlayer} size="sm">
               {generating ? 'Generando...' : 'Generar Cuota'}
             </Button>
           </form>
