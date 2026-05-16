@@ -313,6 +313,13 @@ const Cuotas = () => {
 
   // ── Computed values ──────────────────────────────
   // Build 12-month view if filtering by player
+  const matchedPlayer = useMemo(() => {
+    if (!filters.playerSearch) return null;
+    return jugadores.find((j) =>
+      j.nombre?.toLowerCase().includes(filters.playerSearch.toLowerCase())
+    ) || null;
+  }, [filters.playerSearch, jugadores]);
+
   const playerMonths = useMemo(() => {
     if (!filters.playerSearch) return null;
     const match = jugadores.find((j) =>
@@ -610,6 +617,16 @@ const Cuotas = () => {
         )
       ) : playerMonths ? (
         <div className="rounded-xl border border-border/50 bg-card overflow-hidden">
+          <div className="px-5 py-3 border-b border-border/50 bg-muted/20">
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4 text-primary" />
+              <span className="text-sm font-semibold">
+                {matchedPlayer?.nombre || filters.playerSearch}
+                {' — '}
+                Cuotas {filters.anio && filters.anio !== 'all' ? filters.anio : new Date().getFullYear()}
+              </span>
+            </div>
+          </div>
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">

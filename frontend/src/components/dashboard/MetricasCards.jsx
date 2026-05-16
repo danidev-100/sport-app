@@ -37,7 +37,7 @@ const metricsConfig = [
   },
 ];
 
-const MetricasCards = ({ metricas, loading }) => {
+const MetricasCards = ({ metricas, loading, onMorososClick, onIngresosClick }) => {
   if (loading) {
     return (
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
@@ -58,10 +58,24 @@ const MetricasCards = ({ metricas, loading }) => {
         const raw = metricas?.[cfg.key] ?? 0;
         const value = cfg.format ? formatCurrency(raw) : raw;
 
+        const isMorosos = cfg.key === 'totalMorosos';
+        const isIngresos = cfg.key === 'totalIngresos';
+        const clickHandler = isMorosos && onMorososClick
+          ? onMorososClick
+          : isIngresos && onIngresosClick
+            ? onIngresosClick
+            : undefined;
+        const isClickable = isMorosos || isIngresos;
+
         return (
           <div
             key={cfg.key}
-            className="group relative rounded-xl border border-border/50 bg-card p-5 hover:border-border-light transition-all duration-300 hover:shadow-md"
+            onClick={clickHandler}
+            className={`group relative rounded-xl border border-border/50 bg-card p-5 transition-all duration-300 hover:shadow-md ${
+              isClickable ? 'cursor-pointer' : ''
+            } ${
+              isMorosos ? 'hover:border-rose-300' : isIngresos ? 'hover:border-violet-300' : 'hover:border-border-light'
+            }`}
           >
             {/* Gradient overlay */}
             <div className={`absolute inset-0 rounded-xl bg-gradient-to-br ${cfg.gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />

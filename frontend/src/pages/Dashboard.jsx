@@ -4,6 +4,8 @@ import apiClient from '../api/apiClient';
 import MetricasCards from '../components/dashboard/MetricasCards';
 import DonutChart from '../components/dashboard/DonutChart';
 import RecientesList from '../components/dashboard/RecientesList';
+import MorososModal from '../components/dashboard/MorososModal';
+import IngresosMensualesModal from '../components/dashboard/IngresosMensualesModal';
 
 const CURRENT_YEAR = new Date().getFullYear();
 const YEARS = Array.from({ length: 5 }, (_, i) => CURRENT_YEAR - 2 + i); // últimos 2, actual, próximos 2
@@ -12,8 +14,14 @@ const Dashboard = () => {
   const [metricas, setMetricas] = useState(null);
   const [chartData, setChartData] = useState(null);
   const [recientes, setRecientes] = useState([]);
+  const [morososData, setMorososData] = useState(null);
   const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
+  const [morososOpen, setMorososOpen] = useState(false);
+  const [ingresosOpen, setIngresosOpen] = useState(false);
+  const [ingresosData, setIngresosData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMorosos, setLoadingMorosos] = useState(false);
+  const [loadingIngresos, setLoadingIngresos] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -51,6 +59,36 @@ const Dashboard = () => {
     fetchData();
   }, [selectedYear]);
 
+  const handleMorososClick = async () => {
+    setMorososOpen(true);
+    if (!morososData) {
+      setLoadingMorosos(true);
+      try {
+        const res = await apiClient.get('/dashboard/morosos');
+        setMorososData(res.data?.porCategoria || []);
+      } catch (err) {
+        console.error('Error fetching morosos:', err);
+      } finally {
+        setLoadingMorosos(false);
+      }
+    }
+  };
+
+  const handleIngresosClick = async () => {
+    setIngresosOpen(true);
+    if (!ingresosData) {
+      setLoadingIngresos(true);
+      try {
+        const res = await apiClient.get('/dashboard/ingresos-mensuales');
+        setIngresosData(res.data || []);
+      } catch (err) {
+        console.error('Error fetching ingresos mensuales:', err);
+      } finally {
+        setLoadingIngresos(false);
+      }
+    }
+  };
+
   return (
     <div className="space-y-6 md:space-y-8">
       {/* Header */}
@@ -77,7 +115,7 @@ const Dashboard = () => {
 
       {/* Metrics */}
       <div className="animate-slide-up">
-        <MetricasCards metricas={metricas} loading={loading} />
+        <MetricasCards metricas={metricas} loading={loading} onMorososClick={handleMorososClick} onIngresosClick={handleIngresosClick} />
       </div>
 
       {/* Charts & Recent */}
@@ -89,6 +127,11 @@ const Dashboard = () => {
           <RecientesList jugadores={recientes} loading={loading} />
         </div>
       </div>
+
+      <MorososModal open={morososOpen} onOpenChange={setMorososOpen}
+        morososData={morososData} loading={loadingMorosos} />
+      <IngresosMensualesModal open={ingresosOpen} onOpenChange={setIngresosOpen}
+        data={ingresosData} loading={loadingIngresos} />
     </div>
   );
 };

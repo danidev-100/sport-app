@@ -88,26 +88,34 @@ const getMorosos = async (req, res) => {
     const cuotasAdeudadas = await prisma.cuota.findMany({
       where: { vencida: true },
       include: {
-        jugador: { select: { id: true, nombre: true } },
+        jugador: { select: { id: true, nombre: true, categoria: true } },
         pagos: { select: { id: true } }
       }
     });
 
     const morososMap = {};
+    const CAT_ORDER = ['C7', 'C11', 'C13', 'C15', 'C17', 'C20', 'PRIMERA', 'SENIOR', 'VETERANO'];
 
     for (const cuota of cuotasAdeudadas) {
-      if (cuota.pagos.length > 0) continue; // ya fue pagada, saltar
+      if (cuota.pagos.length > 0) continue;
 
       const jugadorId = cuota.jugadorId;
       if (!morososMap[jugadorId]) {
         morososMap[jugadorId] = {
           jugador: cuota.jugador,
           cuotasPendientes: 0,
-          totalAdeudado: 0
+          totalAdeudado: 0,
+          cuotas: []
         };
       }
       morososMap[jugadorId].cuotasPendientes += 1;
       morososMap[jugadorId].totalAdeudado += parseFloat(cuota.monto);
+      morososMap[jugadorId].cuotas.push({
+        mes: cuota.mes,
+        anio: cuota.anio,
+        monto: parseFloat(cuota.monto),
+        vence: cuota.fechaVencimiento,
+      });
     }
 
     const morosos = Object.values(morososMap).map(m => ({
@@ -115,10 +123,56 @@ const getMorosos = async (req, res) => {
       totalAdeudado: parseFloat(m.totalAdeudado.toFixed(2))
     }));
 
-    res.json({ morosos });
+    // Agrupar por categoría
+    const porCategoria = {};
+    for (const m of morosos) {
+      const cat = m.jugador.categoria || 'SIN CATEGORIA';
+      if (!porCategoria[cat]) porCategoria[cat] = [];
+      porCategoria[cat].push(m);
+    }
+
+    // Ordenar categorías
+    const categorias = CAT_ORDER.filter(c => porCategoria[c]).map(c => ({
+      categoria: c,
+      jugadores: porCategoria[c],
+      total: porCategoria[c].reduce((s, j) => s + j.totalAdeudado, 0),
+      cantidad: porCategoria[c].length,
+    }));
+
+    res.json({ morosos, porCategoria: categorias });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-module.exports = { getMetricas, getCuotasGrafico, getRecientes, getMorosos };
+const getIngresosMensuales = async (req, res) => {
+  try {
+    const pagos = await prisma.pago.findMany({
+      select: { monto: true, fechaPago: true }
+    });
+
+    // Group by year/month in JS
+    const grupos = {};
+    for (const p of pagos) {
+      const d = new Date(p.fechaPago);
+      const key = `${d.getFullYear()}-${d.getMonth() + 1}`;
+      if (!grupos[key]) {
+        grupos[key] = { anio: d.getFullYear(), mes: d.getMonth() + 1, total: 0 };
+      }
+      grupos[key].total += parseFloat(p.monto);
+    }
+
+    const resultados = Object.values(grupos).sort((a, b) =>
+      b.anio - a.anio || b.mes - a.mes
+    );
+
+    // Round totals
+    resultados.forEach(r => { r.total = parseFloat(r.total.toFixed(2)); });
+
+    res.json(resultados);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+module.exports = { getMetricas, getCuotasGrafico, getRecientes, getMorosos, getIngresosMensuales };
