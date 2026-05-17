@@ -12,12 +12,6 @@ enum Role {
   EDITOR
 }
 
-enum Posicion {
-  PORTERO
-  DEFENSA
-  CENTROCAMPISTA
-  DELANTERO
-}
 
 enum Categoria {
   C7

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import apiClient from '../api/apiClient';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, CheckCircle, AlertTriangle, ArrowLeft, ExternalLink } from 'lucide-react';
+import { CreditCard, CheckCircle, AlertTriangle, ExternalLink } from 'lucide-react';
 
 const meses = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
@@ -50,7 +50,7 @@ const Pagos = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen hero-gradient flex items-center justify-center">
+      <div className="flex items-center justify-center min-h-[60vh]">
         <div className="spinner" />
       </div>
     );
@@ -60,30 +60,12 @@ const Pagos = () => {
   const cuotasPagadas = cuotas.filter(c => c.pagos.length > 0);
 
   return (
-    <div className="min-h-screen hero-gradient">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="border-b border-border/50 bg-background/80 backdrop-blur-xl">
-        <div className="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-primary/10 flex items-center justify-center ring-1 ring-primary/20">
-              <img
-                src="/Logo club coop beltrán.svg"
-                alt="Club"
-                className="w-6 h-6 object-contain"
-              />
-            </div>
-            <div>
-              <h1 className="text-base font-bold tracking-tight">Mis Cuotas</h1>
-              <p className="text-xs text-muted-foreground">{jugador?.nombre}</p>
-            </div>
-          </div>
-          <Badge variant="outline" className="text-xs">
-            {jugador?.email}
-          </Badge>
-        </div>
+      <div className="animate-fade-in">
+        <h1 className="text-2xl font-bold tracking-tight">Mis Cuotas</h1>
+        <p className="text-sm text-muted-foreground mt-1">{jugador?.nombre} — {jugador?.email}</p>
       </div>
-
-      <div className="max-w-2xl mx-auto px-6 py-8 space-y-8 animate-fade-in">
         {/* Pendientes */}
         {cuotasPendientes.length > 0 && (
           <section className="space-y-4">
@@ -178,7 +160,6 @@ const Pagos = () => {
             <p className="text-sm text-muted-foreground/60">Consultá con la administración del club</p>
           </div>
         )}
-      </div>
     </div>
   );
 };
