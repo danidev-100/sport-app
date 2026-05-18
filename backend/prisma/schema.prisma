@@ -41,7 +41,7 @@ model User {
 model Jugador {
   id        String     @id @default(uuid())
   nombre    String
-  posicion  Posicion?
+  
   categoria Categoria?
   edad      Int
   telefono  String?
