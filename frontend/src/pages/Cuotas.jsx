@@ -132,6 +132,21 @@ function isCuotaPagada(c) {
   return false;
 }
 
+// ── Helper: get last payment date ─────────────────
+function getFechaPago(c) {
+  if (!c?.pagos?.length) return null;
+  const ultimo = c.pagos[c.pagos.length - 1];
+  return new Date(ultimo.fechaPago);
+}
+
+function formatFecha(date) {
+  if (!date) return '-';
+  return date.toLocaleDateString('es-AR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+}
+
 const Cuotas = () => {
   const { isAdmin } = useAuth();
 
@@ -582,6 +597,7 @@ const Cuotas = () => {
                 <TableHead className="font-semibold">Período</TableHead>
                 <TableHead className="font-semibold">Monto</TableHead>
                 <TableHead className="font-semibold">Estado</TableHead>
+                <TableHead className="font-semibold">Fecha de pago</TableHead>
                 {isAdmin && <TableHead className="font-semibold text-right">Acción</TableHead>}
               </TableRow>
             </TableHeader>
@@ -600,6 +616,9 @@ const Cuotas = () => {
                     <Badge variant={isCuotaPagada(c) ? 'default' : 'destructive'}>
                       {isCuotaPagada(c) ? 'Pagada' : 'Impaga'}
                     </Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-xs">
+                    {isCuotaPagada(c) ? formatFecha(getFechaPago(c)) : '-'}
                   </TableCell>
                   {isAdmin && (
                     <TableCell className="text-right">
