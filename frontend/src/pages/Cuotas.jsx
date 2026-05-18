@@ -529,6 +529,7 @@ const Cuotas = () => {
                 <TableHead className="font-semibold">Mes</TableHead>
                 <TableHead className="font-semibold">Monto</TableHead>
                 <TableHead className="font-semibold">Estado</TableHead>
+                <TableHead className="font-semibold">Fecha de pago</TableHead>
                 {isAdmin && <TableHead className="font-semibold text-right">Acción</TableHead>}
               </TableRow>
             </TableHeader>
@@ -543,6 +544,9 @@ const Cuotas = () => {
                     <Badge variant={m.pagada ? 'default' : 'destructive'}>
                       {m.pagada ? 'Pagada' : 'Impaga'}
                     </Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-xs">
+                    {m.pagada && m.cuota ? formatFecha(getFechaPago(m.cuota)) : '-'}
                   </TableCell>
                   {isAdmin && (
                     <TableCell className="text-right">
