@@ -1,10 +1,36 @@
 const express = require('express');
 const { body } = require('express-validator');
-const cuotaController = require('../controllers/cuotaController');
 const auth = require('../middleware/auth');
 const authorize = require('../middleware/roles');
+const cuotaController = require('../controllers/cuotaController');
+const cuotaService = require('../services/cuotaService');
+const prisma = require('../config/database');
 
 const router = express.Router();
+
+// Revertir pago de una cuota (admin)
+router.post('/:id/revertir-pago', auth, authorize('ADMIN'), async (req, res) => {
+  try {
+    const cuota = await prisma.cuota.findUnique({
+      where: { id: req.params.id },
+      include: { pagos: true, jugador: true }
+    });
+    if (!cuota) return res.status(404).json({ message: 'Cuota no encontrada' });
+
+    // Eliminar todos los pagos asociados
+    await prisma.pago.deleteMany({ where: { cuotaId: cuota.id } });
+
+    // Marcar como impaga
+    await prisma.cuota.update({
+      where: { id: cuota.id },
+      data: { vencida: false }
+    });
+
+    res.json({ message: 'Pago revertido correctamente', cuota });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
 
 router.get('/', cuotaController.getAll);
 router.get('/morosos', cuotaController.getMorosos);

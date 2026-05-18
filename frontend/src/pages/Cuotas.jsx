@@ -13,7 +13,7 @@ import {
   TableCell,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { CreditCard, Search, AlertTriangle, Plus, CheckCircle, Users, DollarSign } from 'lucide-react';
+import { CreditCard, Search, AlertTriangle, Plus, CheckCircle, Users, DollarSign, Undo2 } from 'lucide-react';
 import { formatCurrency } from '../utils/formatters';
 
 const filterMeses = [
@@ -316,6 +316,25 @@ const Cuotas = () => {
     }
   };
 
+  // ── Handle revert payment ───────────────────────
+  const handleRevertir = async (cuotaId) => {
+    if (!confirm('¿Revertir el pago de esta cuota? Quedará como impaga.')) return;
+    setPayingId(cuotaId);
+    try {
+      await apiClient.post(`/cuotas/${cuotaId}/revertir-pago`);
+
+      const [cuotasRes] = await Promise.all([apiClient.get('/cuotas')]);
+      const all = cuotasRes.data.cuotas || [];
+      setAllCuotas(all);
+      setMorosos(computeMorosos(all, jugadores));
+    } catch (err) {
+      const serverData = err.response?.data;
+      alert('Error al revertir: ' + (serverData?.message || err.message));
+    } finally {
+      setPayingId(null);
+    }
+  };
+
   // ── Render ───────────────────────────────────────
   return (
     <div className="space-y-6">
@@ -495,6 +514,7 @@ const Cuotas = () => {
                 <TableHead className="font-semibold">Mes</TableHead>
                 <TableHead className="font-semibold">Monto</TableHead>
                 <TableHead className="font-semibold">Estado</TableHead>
+                {isAdmin && <TableHead className="font-semibold text-right">Acción</TableHead>}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -509,6 +529,36 @@ const Cuotas = () => {
                       {m.pagada ? 'Pagada' : 'Impaga'}
                     </Badge>
                   </TableCell>
+                  {isAdmin && (
+                    <TableCell className="text-right">
+                      {m.pagada && m.cuota ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-destructive"
+                          onClick={() => handleRevertir(m.cuota.id)}
+                          disabled={payingId === m.cuota.id}
+                          title="Revertir pago"
+                        >
+                          <Undo2 className="w-3.5 h-3.5" />
+                          {payingId === m.cuota.id ? 'Revertiendo...' : 'Revertir'}
+                        </Button>
+                      ) : m.cuota ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 gap-1.5 text-xs"
+                          onClick={() => handlePagar(m.cuota.id, m.monto)}
+                          disabled={payingId === m.cuota.id}
+                        >
+                          <DollarSign className="w-3.5 h-3.5" />
+                          {payingId === m.cuota.id ? 'Pagando...' : 'Pagar'}
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
@@ -554,7 +604,17 @@ const Cuotas = () => {
                   {isAdmin && (
                     <TableCell className="text-right">
                       {isCuotaPagada(c) ? (
-                        <span className="text-xs text-muted-foreground">—</span>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-destructive"
+                          onClick={() => handleRevertir(c.id)}
+                          disabled={payingId === c.id}
+                          title="Revertir pago"
+                        >
+                          <Undo2 className="w-3.5 h-3.5" />
+                          {payingId === c.id ? 'Revertiendo...' : 'Revertir'}
+                        </Button>
                       ) : (
                         <Button
                           variant="outline"
