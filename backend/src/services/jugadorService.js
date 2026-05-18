@@ -1,5 +1,6 @@
 const prisma = require('../config/database');
 const historialService = require('./historialService');
+const { calcularMontoCuota } = require('../utils/calcularMontoCuota');
 
 const getAll = async (filters = {}) => {
   const where = {};
@@ -66,11 +67,12 @@ const create = async (data, userId) => {
 
   // Crear cuotas como impagas para todos los meses del año actual
   const currentYear = new Date().getFullYear();
+  const montoCuota = calcularMontoCuota(data.categoria);
   const cuotasData = Array.from({ length: 12 }, (_, i) => ({
     jugadorId: jugador.id,
     mes: i + 1,
     anio: currentYear,
-    monto: 0,
+    monto: montoCuota,
     fechaVencimiento: new Date(currentYear, i, 5)
   }));
 

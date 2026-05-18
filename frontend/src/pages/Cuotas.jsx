@@ -25,6 +25,18 @@ const filterMeses = [
 
 const anios = ['2025', '2026', '2027'];
 
+// Montos de cuota según categoría
+const MONTOS_CUOTA = {
+  C7: 20000, C11: 20000, C13: 20000,
+  C15: 25000, C17: 25000, C20: 25000,
+  PRIMERA: 25000, SENIOR: 25000, VETERANO: 25000,
+};
+
+const getMontoPorCategoria = (categoria) => {
+  if (!categoria) return 25000;
+  return MONTOS_CUOTA[categoria.toUpperCase()] ?? 25000;
+};
+
 // ── Helper: compute morosos from cuotas + jugadores list ─────
 // Finds both: (a) existing unpaid cuotas from past months, and
 // (b) active players who are missing cuotas for past months
@@ -223,7 +235,12 @@ const Cuotas = () => {
       setAllCuotas(all);
       setMorosos(computeMorosos(all, jugadores));
       alert('Cuota generada y marcada como pagada');
-      setGenData({ jugadorId: '', mes: '', anio: '', monto: '' });
+      setGenData((prev) => ({
+        ...prev,
+        mes: '',
+        anio: '',
+        monto: matchedPlayer ? String(getMontoPorCategoria(matchedPlayer.categoria)) : prev.monto,
+      }));
     } catch (err) {
       const serverData = err.response?.data;
       alert('Error: ' + (serverData?.message || err.message));
@@ -246,6 +263,7 @@ const Cuotas = () => {
     setGenData((prev) => ({
       ...prev,
       jugadorId: matchedPlayer ? String(matchedPlayer.id) : '',
+      monto: matchedPlayer ? String(getMontoPorCategoria(matchedPlayer.categoria)) : '',
     }));
   }, [matchedPlayer]);
 
@@ -363,6 +381,11 @@ const Cuotas = () => {
                 <Users className="w-4 h-4 text-primary" />
                 <span className="text-sm font-medium">
                   Generar cuota para: <strong>{matchedPlayer.nombre}</strong>
+                  {matchedPlayer.categoria && (
+                    <span className="ml-2 text-xs text-muted-foreground">
+                      ({matchedPlayer.categoria} — {formatCurrency(getMontoPorCategoria(matchedPlayer.categoria))})
+                    </span>
+                  )}
                 </span>
               </div>
             ) : (
@@ -403,6 +426,8 @@ const Cuotas = () => {
                 placeholder="Monto"
                 value={genData.monto}
                 onChange={(e) => setGenData((prev) => ({ ...prev, monto: e.target.value }))}
+                readOnly={!!matchedPlayer}
+                className={matchedPlayer ? 'bg-muted/50 cursor-not-allowed' : ''}
                 required
               />
             </div>
