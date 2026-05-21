@@ -21,6 +21,14 @@ const verifyGoogleCredential = async (credential) => {
     });
 
     if (!jugador) {
+      // Verificar que no exista otro jugador con el mismo email
+      const existingEmail = await prisma.jugador.findFirst({
+        where: { email: { equals: payload.email, mode: 'insensitive' } }
+      });
+      if (existingEmail) {
+        throw new Error('Ya existe un jugador registrado con ese email');
+      }
+
       jugador = await prisma.jugador.create({
         data: {
           nombre: payload.name || 'Jugador',

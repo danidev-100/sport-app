@@ -34,6 +34,10 @@ const JugadorFormDialog = ({ open, onOpenChange, onSubmit, initialData, loading 
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      alert('Ingresá un email válido');
+      return;
+    }
     onSubmit({ ...formData, edad: parseInt(formData.edad) || 0 });
   };
 

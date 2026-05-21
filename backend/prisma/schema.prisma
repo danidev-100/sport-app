@@ -45,7 +45,7 @@ model Jugador {
   categoria Categoria?
   edad      Int
   telefono  String?
-  email     String?
+  email     String?    @unique
   fotoUrl   String?
   activo    Boolean    @default(true)
   googleId  String?    @unique

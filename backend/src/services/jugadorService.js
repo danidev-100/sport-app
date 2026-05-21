@@ -52,6 +52,14 @@ const getById = async (id) => {
 };
 
 const create = async (data, userId) => {
+  // Validar email único
+  if (data.email) {
+    const existingEmail = await prisma.jugador.findFirst({
+      where: { email: { equals: data.email, mode: 'insensitive' } }
+    });
+    if (existingEmail) throw new Error('Ya existe un jugador con ese email');
+  }
+
   const jugador = await prisma.jugador.create({
     data: {
       nombre: data.nombre,
@@ -87,6 +95,14 @@ const create = async (data, userId) => {
 const update = async (id, data, userId) => {
   const existing = await prisma.jugador.findUnique({ where: { id } });
   if (!existing) throw new Error('Jugador no encontrado');
+
+  // Validar email único si se está cambiando
+  if (data.email && data.email !== existing.email) {
+    const duplicate = await prisma.jugador.findFirst({
+      where: { id: { not: id }, email: { equals: data.email, mode: 'insensitive' } }
+    });
+    if (duplicate) throw new Error('Ya existe un jugador con ese email');
+  }
 
   const updates = {};
   const fields = ['nombre', 'categoria', 'edad', 'telefono', 'email', 'fotoUrl', 'activo'];

@@ -12,6 +12,7 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [emailError, setEmailError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
@@ -35,6 +36,7 @@ export default function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setEmailError('');
 
     const validationError = validateForm();
     if (validationError) {
@@ -47,7 +49,12 @@ export default function Register() {
       await register(email, password, nombre);
       navigate('/');
     } catch (err) {
-      setError(err.message);
+      const msg = err.message || '';
+      if (msg.toLowerCase().includes('email')) {
+        setEmailError(msg);
+      } else {
+        setError(msg);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -97,10 +104,14 @@ export default function Register() {
                 type="email"
                 placeholder="tu@email.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => { setEmail(e.target.value); setEmailError(''); }}
                 disabled={isSubmitting}
                 autoComplete="email"
+                className={emailError ? 'border-destructive' : ''}
               />
+              {emailError && (
+                <p className="text-xs text-destructive font-medium">{emailError}</p>
+              )}
             </div>
 
             <div className="space-y-1.5">
