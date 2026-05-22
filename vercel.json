@@ -1,13 +1,15 @@
 {
-  "experimentalServices": {
-    "frontend": {
-      "entrypoint": "frontend",
-      "routePrefix": "/",
-      "framework": "vite"
-    },
-    "backend": {
-      "entrypoint": "serverless.js",
-      "routePrefix": "/api"
+  "version": 2,
+  "builds": [
+    {
+      "src": "serverless.js",
+      "use": "@vercel/node"
     }
-  }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "serverless.js"
+    }
+  ]
 }

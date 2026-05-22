@@ -1,5 +1,4 @@
-const fetch = require('node-fetch');
-
+const prisma = require('../config/database');
 const MERCADO_PAGO_ACCESS_TOKEN = process.env.MERCADO_PAGO_ACCESS_TOKEN;
 
 const createPaymentPreference = async (cuota, jugador) => {
@@ -99,5 +98,3 @@ function getMonthName(month) {
 }
 
 module.exports = { createPaymentPreference, getPaymentStatus, processWebhook };
-
-const prisma = require('../config/database');
