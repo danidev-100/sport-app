@@ -1,5 +1,28 @@
+const crypto = require('crypto');
 const prisma = require('../config/database');
 const MERCADO_PAGO_ACCESS_TOKEN = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+
+function verifyWebhookSignature(signature, body) {
+  if (!signature) return false;
+
+  // Mercado Pago sends: X-Signature: ts=... v1=...
+  const parts = {};
+  signature.split(',').forEach(p => {
+    const [key, value] = p.trim().split('=');
+    parts[key.trim()] = value.trim();
+  });
+
+  const { ts, v1 } = parts;
+  if (!ts || !v1) return false;
+
+  const secret = process.env.MERCADO_PAGO_WEBHOOK_SECRET;
+  if (!secret) return false;
+
+  const manifest = `id:${body?.data?.id};request-id:${body?.id};ts:${ts};`;
+  const expected = crypto.createHmac('sha256', secret).update(manifest).digest('hex');
+
+  return crypto.timingSafeEqual(Buffer.from(v1), Buffer.from(expected));
+}
 
 const createPaymentPreference = async (cuota, jugador) => {
   const preference = {
@@ -97,4 +120,4 @@ function getMonthName(month) {
   return months[month - 1] || '';
 }
 
-module.exports = { createPaymentPreference, getPaymentStatus, processWebhook };
+module.exports = { createPaymentPreference, getPaymentStatus, processWebhook, verifyWebhookSignature };

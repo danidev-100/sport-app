@@ -10,10 +10,12 @@ import {
   TableCell,
 } from '@/components/ui/table';
 import { Pencil, Trash2, Receipt } from 'lucide-react';
+import ConfirmDialog from '../common/ConfirmDialog';
 
 const GastoList = ({ onEdit, refreshTrigger, partidoId }) => {
   const [gastos, setGastos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [confirmState, setConfirmState] = useState(null);
 
   useEffect(() => {
     const fetchGastos = async () => {
@@ -34,14 +36,19 @@ const GastoList = ({ onEdit, refreshTrigger, partidoId }) => {
   }, [partidoId, refreshTrigger]);
 
   const handleDelete = async (gasto) => {
-    if (window.confirm('¿Eliminar este gasto?')) {
-      try {
-        await deleteGasto(gasto.id);
-        setGastos((prev) => prev.filter((g) => g.id !== gasto.id));
-      } catch (err) {
-        console.error('Error deleting gasto:', err);
+    setConfirmState({
+      title: 'Eliminar gasto',
+      description: '¿Eliminar este gasto?',
+      onConfirm: async () => {
+        setConfirmState(null);
+        try {
+          await deleteGasto(gasto.id);
+          setGastos((prev) => prev.filter((g) => g.id !== gasto.id));
+        } catch (err) {
+          console.error('Error deleting gasto:', err);
+        }
       }
-    }
+    });
   };
 
   const formatCurrency = (value) =>
@@ -120,6 +127,15 @@ const GastoList = ({ onEdit, refreshTrigger, partidoId }) => {
           </Table>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmState}
+        onOpenChange={() => setConfirmState(null)}
+        title={confirmState?.title}
+        description={confirmState?.description}
+        onConfirm={confirmState?.onConfirm}
+        variant="destructive"
+      />
     </div>
   );
 };

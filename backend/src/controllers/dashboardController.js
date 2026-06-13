@@ -1,6 +1,7 @@
 const prisma = require('../config/database');
+const { paginate, paginatedResponse } = require('../utils/helpers');
 
-const getMetricas = async (req, res) => {
+const getMetricas = async (req, res, next) => {
   try {
     const totalJugadores = await prisma.jugador.count();
     const jugadoresActivos = await prisma.jugador.count({ where: { activo: true } });
@@ -24,27 +25,29 @@ const getMetricas = async (req, res) => {
       totalMorosos
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-const getCuotasGrafico = async (req, res) => {
+const getCuotasGrafico = async (req, res, next) => {
   try {
     const anio = parseInt(req.query.anio) || new Date().getFullYear();
+
+    // Single query: fetch all cuotas for the year with their payments
+    const cuotas = await prisma.cuota.findMany({
+      where: { anio },
+      include: { pagos: { select: { id: true } } },
+    });
 
     const meses = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
     const pagadas = [];
     const pendientes = [];
 
+    // Process in-memory instead of 12 DB queries
     for (const mes of meses) {
-      const cuotas = await prisma.cuota.findMany({
-        where: { mes, anio },
-        include: { pagos: { select: { id: true } } }
-      });
-
-      const pagadasCount = cuotas.filter(c => c.pagos.length > 0).length;
-      const pendientesCount = cuotas.filter(c => c.pagos.length === 0).length;
-
+      const cuotasDelMes = cuotas.filter(c => c.mes === mes);
+      const pagadasCount = cuotasDelMes.filter(c => c.pagos.length > 0).length;
+      const pendientesCount = cuotasDelMes.filter(c => c.pagos.length === 0).length;
       pagadas.push(pagadasCount);
       pendientes.push(pendientesCount);
     }
@@ -55,33 +58,36 @@ const getCuotasGrafico = async (req, res) => {
       pendientes
     });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-const getRecientes = async (req, res) => {
+const getRecientes = async (req, res, next) => {
   try {
-    const limit = parseInt(req.query.limit) || 5;
+    const { skip, take, page, limit } = paginate(req.query.page, req.query.limit || 5);
 
-    const jugadores = await prisma.jugador.findMany({
-      orderBy: { createdAt: 'desc' },
-      take: limit,
-      select: {
-        id: true,
-        nombre: true,
-        posicion: true,
-        edad: true,
-        createdAt: true
-      }
-    });
+    const [jugadores, total] = await Promise.all([
+      prisma.jugador.findMany({
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          nombre: true,
+          edad: true,
+          createdAt: true
+        }
+      }),
+      prisma.jugador.count(),
+    ]);
 
-    res.json({ jugadores });
+    res.json(paginatedResponse(jugadores, total, page, limit));
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-const getMorosos = async (req, res) => {
+const getMorosos = async (req, res, next) => {
   try {
     // Cuotas impagas (sin pago registrado, estén vencidas o no)
     const cuotasAdeudadas = await prisma.cuota.findMany({
@@ -138,11 +144,11 @@ const getMorosos = async (req, res) => {
 
     res.json({ morosos, porCategoria: categorias });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-const getIngresosMensuales = async (req, res) => {
+const getIngresosMensuales = async (req, res, next) => {
   try {
     const pagos = await prisma.pago.findMany({
       select: { monto: true, fechaPago: true }
@@ -168,7 +174,7 @@ const getIngresosMensuales = async (req, res) => {
 
     res.json(resultados);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 

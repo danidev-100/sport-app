@@ -4,7 +4,7 @@ const authMiddleware = require('../middleware/authJugador');
 
 const router = express.Router();
 
-router.post('/google', async (req, res) => {
+router.post('/google', async (req, res, next) => {
   try {
     const { credential } = req.body;
     
@@ -15,11 +15,11 @@ router.post('/google', async (req, res) => {
     const result = await googleService.verifyGoogleCredential(credential);
     res.json(result);
   } catch (error) {
-    res.status(401).json({ message: error.message });
+    next(error);
   }
 });
 
-router.get('/me', authMiddleware, async (req, res) => {
+router.get('/me', authMiddleware, async (req, res, next) => {
   try {
     const prisma = require('../config/database');
     const jugador = await prisma.jugador.findUnique({
@@ -33,7 +33,7 @@ router.get('/me', authMiddleware, async (req, res) => {
 
     res.json(jugador);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 });
 

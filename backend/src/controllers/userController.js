@@ -1,27 +1,36 @@
 const prisma = require('../config/database');
 const bcrypt = require('bcryptjs');
+const { paginate, paginatedResponse } = require('../utils/helpers');
+const { NotFoundError, ValidationError } = require('../utils/errors');
 
-const getAll = async (req, res) => {
+const getAll = async (req, res, next) => {
   try {
-    const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        email: true,
-        nombre: true,
-        rol: true,
-        activo: true,
-        createdAt: true,
-        updatedAt: true
-      },
-      orderBy: { createdAt: 'desc' }
-    });
-    res.json({ users });
+    const { skip, take, page, limit } = paginate(req.query.page, req.query.limit);
+    const select = {
+      id: true,
+      email: true,
+      nombre: true,
+      rol: true,
+      activo: true,
+      createdAt: true,
+      updatedAt: true
+    };
+    const [users, total] = await Promise.all([
+      prisma.user.findMany({
+        select,
+        skip,
+        take,
+        orderBy: { createdAt: 'desc' }
+      }),
+      prisma.user.count(),
+    ]);
+    res.json(paginatedResponse(users, total, page, limit));
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-const create = async (req, res) => {
+const create = async (req, res, next) => {
   try {
     const { email, password, nombre, rol } = req.body;
     
@@ -50,11 +59,11 @@ const create = async (req, res) => {
     
     res.status(201).json({ user });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    next(error);
   }
 };
 
-const update = async (req, res) => {
+const update = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { rol, activo } = req.body;
@@ -65,7 +74,7 @@ const update = async (req, res) => {
     }
 
     if (id === req.user.id) {
-      return res.status(400).json({ message: 'No puedes modificarse a ti mismo' });
+      return res.status(400).json({ message: 'No puedes modificarte a ti mismo' });
     }
 
     const updates = {};
@@ -92,27 +101,27 @@ const update = async (req, res) => {
 
     res.json({ user });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    next(error);
   }
 };
 
-const remove = async (req, res) => {
+const remove = async (req, res, next) => {
   try {
     const { id } = req.params;
 
     if (id === req.user.id) {
-      return res.status(400).json({ message: 'No puedes eliminarse a ti mismo' });
+      return res.status(400).json({ message: 'No puedes eliminarte a ti mismo' });
     }
 
     const user = await prisma.user.findUnique({ where: { id } });
     if (!user) {
-      return res.status(404).json({ message: 'Usuario no encontrado' });
+      throw new NotFoundError('Usuario no encontrado');
     }
 
     await prisma.user.delete({ where: { id } });
     res.json({ message: 'Usuario eliminado correctamente' });
   } catch (error) {
-    res.status(404).json({ message: error.message });
+    next(error);
   }
 };
 

@@ -1,6 +1,9 @@
 require('dotenv').config();
+require('express-async-errors');
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 
 const authRoutes = require('./routes/auth');
 const jugadorRoutes = require('./routes/jugadores');
@@ -13,6 +16,30 @@ const userRoutes = require('./routes/users');
 const app = express();
 
 app.use(cors());
+
+// Security headers
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "https://api.mercadopago.com"],
+    },
+  },
+}));
+
+// Global rate limit — 100 requests per 15 minutes per IP
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Demasiadas solicitudes, intentá de nuevo más tarde', code: 'RATE_LIMIT' },
+});
+app.use(globalLimiter);
+
 app.use(express.json({ strict: false }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -34,14 +61,13 @@ mount('/partidos', require('./routes/partidos'));
 mount('/ingresos', require('./routes/ingresos'));
 mount('/gastos', require('./routes/gastos'));
 mount('/contabilidad', require('./routes/contabilidad'));
+mount('/fechas', require('./routes/fechas'));
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Club Deportivo API' });
 });
 
-app.use((err, req, res, next) => {
-  console.error('ERROR:', err.stack);
-  res.status(500).json({ message: 'Error interno del servidor', error: err.message });
-});
+const errorHandler = require('./middleware/errorHandler');
+app.use(errorHandler);
 
 module.exports = app;

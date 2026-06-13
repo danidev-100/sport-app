@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import apiClient from '../api/apiClient';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -39,10 +40,10 @@ const Pagos = () => {
       if (res.data.initPoint) {
         window.location.href = res.data.initPoint;
       } else {
-        alert('Error al crear preferencia de pago');
+        toast.error('Error al crear preferencia de pago');
       }
     } catch (error) {
-      alert(error.response?.data?.message || 'Error al procesar pago');
+      toast.error(error.response?.data?.message || 'Error al procesar pago');
     } finally {
       setPaying(null);
     }

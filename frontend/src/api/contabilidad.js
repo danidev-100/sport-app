@@ -20,3 +20,7 @@ export const getPartido = (id) => apiClient.get(`/partidos/${id}`);
 export const createPartido = (data) => apiClient.post('/partidos', data);
 export const updatePartido = (id, data) => apiClient.put(`/partidos/${id}`, data);
 export const deletePartido = (id) => apiClient.delete(`/partidos/${id}`);
+
+export const getFechas = () => apiClient.get('/fechas');
+export const createFecha = (data) => apiClient.post('/fechas', data);
+export const deleteFecha = (id) => apiClient.delete(`/fechas/${id}`);

@@ -59,8 +59,9 @@ export const AuthProvider = ({ children }) => {
     setError(null);
     try {
       const response = await apiClient.post('/auth/register', { email, password, nombre });
-      const { token, user: userData } = response.data;
+      const { token, refreshToken, user: userData } = response.data;
       localStorage.setItem('token', token);
+      if (refreshToken) localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
       return response.data;
@@ -73,8 +74,16 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = useCallback(() => {
+  const logout = useCallback(async (refreshToken) => {
+    try {
+      if (refreshToken) {
+        await apiClient.post('/auth/logout', { refreshToken });
+      }
+    } catch {
+      // Ignore logout API errors — clean up locally regardless
+    }
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
     localStorage.removeItem('user');
     setUser(null);
     navigate('/login');

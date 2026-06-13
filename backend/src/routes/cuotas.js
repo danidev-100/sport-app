@@ -9,7 +9,7 @@ const prisma = require('../config/database');
 const router = express.Router();
 
 // Revertir pago de una cuota (admin)
-router.post('/:id/revertir-pago', auth, authorize('ADMIN'), async (req, res) => {
+router.post('/:id/revertir-pago', auth, authorize('ADMIN'), async (req, res, next) => {
   try {
     const cuota = await prisma.cuota.findUnique({
       where: { id: req.params.id },
@@ -28,7 +28,7 @@ router.post('/:id/revertir-pago', auth, authorize('ADMIN'), async (req, res) => 
 
     res.json({ message: 'Pago revertido correctamente', cuota });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 });
 
@@ -46,6 +46,8 @@ router.post('/generar-jugador', [
   body('anio').isInt({ min: 2000 }).withMessage('Año inválido'),
   body('monto').isFloat({ min: 0 }).withMessage('Monto debe ser mayor a 0')
 ], authorize('ADMIN'), cuotaController.generarParaJugador);
+
+router.post('/generar-masivas', auth, authorize('ADMIN'), cuotaController.generarMasivas);
 
 router.post('/', [
   body('jugadorId').isUUID().withMessage('ID de jugador inválido'),

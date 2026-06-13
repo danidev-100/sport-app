@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { toast } from 'sonner';
 import apiClient from '../api/apiClient';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -14,6 +15,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Search, Plus, Pencil, Trash2, User, Filter } from 'lucide-react';
+import ConfirmDialog from '../components/common/ConfirmDialog';
 
 const categorias = ['C7', 'C11', 'C13', 'C15', 'C17', 'C20', 'PRIMERA', 'SENIOR', 'VETERANO'];
 
@@ -35,7 +37,7 @@ const JugadorFormDialog = ({ open, onOpenChange, onSubmit, initialData, loading 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      alert('Ingresá un email válido');
+      toast.error('Ingresá un email válido');
       return;
     }
     onSubmit({ ...formData, edad: parseInt(formData.edad) || 0 });
@@ -98,8 +100,12 @@ const Jugadores = () => {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [filtro, setFiltro] = useState({ busqueda: '', categoria: '' });
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingJugador, setEditingJugador] = useState(null);
+  const [confirmState, setConfirmState] = useState(null);
 
   const fetchJugadores = useCallback(async () => {
     setLoading(true);
@@ -107,19 +113,27 @@ const Jugadores = () => {
       const cleanFilters = {};
       if (filtro.busqueda) cleanFilters.busqueda = filtro.busqueda;
       if (filtro.categoria && filtro.categoria !== 'all') cleanFilters.categoria = filtro.categoria;
-      const params = new URLSearchParams(cleanFilters).toString();
+      const params = new URLSearchParams({ ...cleanFilters, page, limit: 10 }).toString();
       const res = await apiClient.get(`/jugadores?${params}`);
-      setJugadores(res.data.jugadores || []);
+      const { data, pagination } = res.data;
+      setJugadores(data || []);
+      setTotalPages(pagination?.totalPages || 1);
+      setTotal(pagination?.total || 0);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
     }
-  }, [filtro]);
+  }, [filtro, page]);
 
   useEffect(() => {
     fetchJugadores();
   }, [fetchJugadores]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setPage(1);
+  }, [filtro.busqueda, filtro.categoria]);
 
   const handleSubmit = async (data) => {
     setSaving(true);
@@ -133,21 +147,26 @@ const Jugadores = () => {
       setEditingJugador(null);
       fetchJugadores();
     } catch (err) {
-      alert(err.response?.data?.message || 'Error al guardar');
+      toast.error(err.response?.data?.message || 'Error al guardar');
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (jugador) => {
-    if (confirm(`¿Eliminar a ${jugador.nombre}?`)) {
-      try {
-        await apiClient.delete(`/jugadores/${jugador.id}`);
-        fetchJugadores();
-      } catch (err) {
-        console.error('Error:', err);
+    setConfirmState({
+      title: 'Eliminar jugador',
+      description: `¿Eliminar a ${jugador.nombre}?`,
+      onConfirm: async () => {
+        setConfirmState(null);
+        try {
+          await apiClient.delete(`/jugadores/${jugador.id}`);
+          fetchJugadores();
+        } catch (err) {
+          console.error('Error:', err);
+        }
       }
-    }
+    });
   };
 
   return (
@@ -267,12 +286,38 @@ const Jugadores = () => {
         </div>
       )}
 
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-2">
+          <p className="text-sm text-muted-foreground">
+            Página {page} de {totalPages} ({total} jugadores)
+          </p>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>
+              Anterior
+            </Button>
+            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
+              Siguiente
+            </Button>
+          </div>
+        </div>
+      )}
+
       <JugadorFormDialog
         open={modalOpen}
         onOpenChange={setModalOpen}
         onSubmit={handleSubmit}
         initialData={editingJugador}
         loading={saving}
+      />
+
+      <ConfirmDialog
+        open={!!confirmState}
+        onOpenChange={() => setConfirmState(null)}
+        title={confirmState?.title}
+        description={confirmState?.description}
+        onConfirm={confirmState?.onConfirm}
+        variant="destructive"
       />
     </div>
   );

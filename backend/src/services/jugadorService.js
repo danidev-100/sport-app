@@ -2,7 +2,7 @@ const prisma = require('../config/database');
 const historialService = require('./historialService');
 const { calcularMontoCuota } = require('../utils/calcularMontoCuota');
 
-const getAll = async (filters = {}) => {
+const getAll = async (filters = {}, skip = 0, take = 25) => {
   const where = {};
 
   if (filters.busqueda) {
@@ -13,10 +13,6 @@ const getAll = async (filters = {}) => {
     ];
   }
 
-  if (filters.posicion) {
-    where.posicion = filters.posicion;
-  }
-
   if (filters.categoria) {
     where.categoria = filters.categoria;
   }
@@ -25,15 +21,22 @@ const getAll = async (filters = {}) => {
     where.activo = filters.activo === 'true';
   }
 
-  return prisma.jugador.findMany({
-    where,
-    orderBy: { createdAt: 'desc' },
-    include: {
-      cuotas: {
-        select: { id: true, mes: true, anio: true, monto: true, vencida: true }
+  const [jugadores, total] = await Promise.all([
+    prisma.jugador.findMany({
+      where,
+      skip,
+      take,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        cuotas: {
+          select: { id: true, mes: true, anio: true, monto: true, vencida: true }
+        }
       }
-    }
-  });
+    }),
+    prisma.jugador.count({ where }),
+  ]);
+
+  return { jugadores, total };
 };
 
 const getById = async (id) => {

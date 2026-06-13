@@ -19,16 +19,6 @@ export const formatMonth = (month) => {
   return months[month - 1] || '';
 };
 
-export const getPosicionLabel = (posicion) => {
-  const labels = {
-    PORTERO: 'Portero',
-    DEFENSA: 'Defensa',
-    CENTROCAMPISTA: 'Centrocampista',
-    DELANTERO: 'Delantero'
-  };
-  return labels[posicion] || posicion;
-};
-
 export const getEstadoCuota = (cuota) => {
   if (cuota.pagos?.length > 0) {
     const totalPagado = cuota.pagos.reduce((sum, p) => sum + parseFloat(p.monto), 0);

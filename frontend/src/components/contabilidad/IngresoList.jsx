@@ -10,10 +10,12 @@ import {
   TableCell,
 } from '@/components/ui/table';
 import { Pencil, Trash2, Receipt } from 'lucide-react';
+import ConfirmDialog from '../common/ConfirmDialog';
 
 const IngresoList = ({ onEdit, refreshTrigger, partidoId }) => {
   const [ingresos, setIngresos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [confirmState, setConfirmState] = useState(null);
 
   useEffect(() => {
     const fetchIngresos = async () => {
@@ -34,14 +36,19 @@ const IngresoList = ({ onEdit, refreshTrigger, partidoId }) => {
   }, [partidoId, refreshTrigger]);
 
   const handleDelete = async (ingreso) => {
-    if (window.confirm('¿Eliminar este ingreso?')) {
-      try {
-        await deleteIngreso(ingreso.id);
-        setIngresos((prev) => prev.filter((i) => i.id !== ingreso.id));
-      } catch (err) {
-        console.error('Error deleting ingreso:', err);
+    setConfirmState({
+      title: 'Eliminar ingreso',
+      description: '¿Eliminar este ingreso?',
+      onConfirm: async () => {
+        setConfirmState(null);
+        try {
+          await deleteIngreso(ingreso.id);
+          setIngresos((prev) => prev.filter((i) => i.id !== ingreso.id));
+        } catch (err) {
+          console.error('Error deleting ingreso:', err);
+        }
       }
-    }
+    });
   };
 
   const formatCurrency = (value) =>
@@ -120,6 +127,15 @@ const IngresoList = ({ onEdit, refreshTrigger, partidoId }) => {
           </Table>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmState}
+        onOpenChange={() => setConfirmState(null)}
+        title={confirmState?.title}
+        description={confirmState?.description}
+        onConfirm={confirmState?.onConfirm}
+        variant="destructive"
+      />
     </div>
   );
 };
