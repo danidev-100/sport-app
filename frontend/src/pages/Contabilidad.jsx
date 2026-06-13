@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Plus, ArrowLeft, Lock, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
@@ -80,6 +81,7 @@ const Contabilidad = () => {
       setTab('ingresos');
     } catch (err) {
       const msg = err.response?.data?.message || err.message || 'Error al crear partido';
+      toast.error(msg);
       setErrorMsg(msg);
       console.error('Error creating partido:', err);
     } finally {
@@ -102,6 +104,8 @@ const Contabilidad = () => {
       setEditingIngreso(null);
       setRefreshTrigger((t) => t + 1);
     } catch (err) {
+      const msg = err.response?.data?.message || err.message || 'Error al guardar ingreso';
+      toast.error(msg);
       console.error('Error saving ingreso:', err);
     } finally {
       setSaving(false);
@@ -128,6 +132,8 @@ const Contabilidad = () => {
       setEditingGasto(null);
       setRefreshTrigger((t) => t + 1);
     } catch (err) {
+      const msg = err.response?.data?.message || err.message || 'Error al guardar gasto';
+      toast.error(msg);
       console.error('Error saving gasto:', err);
     } finally {
       setGastoSaving(false);
