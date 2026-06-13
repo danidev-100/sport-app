@@ -24,7 +24,7 @@ const IngresoList = ({ onEdit, refreshTrigger, partidoId }) => {
         const params = {};
         if (partidoId) params.partidoId = partidoId;
         const res = await getIngresos(params);
-        setIngresos(res.data?.ingresos || []);
+        setIngresos(res.data?.data || res.data?.ingresos || []);
       } catch (err) {
         console.error('Error fetching ingresos:', err);
         setIngresos([]);

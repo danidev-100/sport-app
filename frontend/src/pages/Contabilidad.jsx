@@ -43,7 +43,7 @@ const Contabilidad = () => {
       setLoadingPartidos(true);
       try {
         const res = await getPartidos();
-        setPartidos(res.data?.partidos || []);
+        setPartidos(res.data?.data || res.data?.partidos || []);
       } catch (err) {
         console.error('Error fetching partidos:', err);
         setPartidos([]);

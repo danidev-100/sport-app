@@ -33,7 +33,7 @@ const Dashboard = () => {
           apiClient.get('/jugadores/recientes?limit=5')
         ]);
         setMetricas(metricasRes.data);
-        setRecientes(recientesRes.data?.jugadores || recientesRes.data || []);
+        setRecientes(recientesRes.data?.data || recientesRes.data?.jugadores || []);
 
         const data = chartRes.data;
         const meses = data.meses || [];

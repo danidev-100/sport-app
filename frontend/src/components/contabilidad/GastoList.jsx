@@ -24,7 +24,7 @@ const GastoList = ({ onEdit, refreshTrigger, partidoId }) => {
         const params = {};
         if (partidoId) params.partidoId = partidoId;
         const res = await getGastos(params);
-        setGastos(res.data?.gastos || []);
+        setGastos(res.data?.data || res.data?.gastos || []);
       } catch (err) {
         console.error('Error fetching gastos:', err);
         setGastos([]);

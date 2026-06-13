@@ -16,14 +16,14 @@ const PartidoBalance = ({ partidoId, refreshTrigger }) => {
           getIngresos(params),
           getGastos(params),
         ]);
-        const ingresos = (ingRes.data?.ingresos || []).map((i) => ({
+        const ingresos = (ingRes.data?.data || ingRes.data?.ingresos || []).map((i) => ({
           id: i.id,
           descripcion: i.descripcion,
           monto: Number(i.monto),
           tipo: 'ingreso',
           fecha: i.fecha,
         }));
-        const gastos = (gasRes.data?.gastos || []).map((g) => ({
+        const gastos = (gasRes.data?.data || gasRes.data?.gastos || []).map((g) => ({
           id: g.id,
           descripcion: g.descripcion,
           monto: Number(g.monto),

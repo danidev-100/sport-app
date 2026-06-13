@@ -179,11 +179,12 @@ const Cuotas = () => {
           apiClient.get('/jugadores'),
         ]);
 
-        const all = cuotasRes.data.cuotas || [];
+        const all = cuotasRes.data?.data || cuotasRes.data?.cuotas || [];
         setAllCuotas(all);
         setCuotas(all);
-        setJugadores(jugadoresRes.data.jugadores || []);
-        setMorosos(computeMorosos(all, jugadoresRes.data.jugadores || []));
+        const jugs = jugadoresRes.data?.data || jugadoresRes.data?.jugadores || [];
+        setJugadores(jugs);
+        setMorosos(computeMorosos(all, jugs));
       } catch (err) {
         console.error('Error fetching data:', err);
       } finally {
@@ -250,7 +251,7 @@ const Cuotas = () => {
 
       // Re-fetch all data
       const [cuotasRes] = await Promise.all([apiClient.get('/cuotas')]);
-      const all = cuotasRes.data.cuotas || [];
+      const all = cuotasRes.data?.data || cuotasRes.data?.cuotas || [];
       setAllCuotas(all);
       setMorosos(computeMorosos(all, jugadores));
       toast.success('Cuota generada y marcada como pagada');
@@ -344,7 +345,7 @@ const Cuotas = () => {
 
           // Re-fetch and refresh
           const [cuotasRes] = await Promise.all([apiClient.get('/cuotas')]);
-          const all = cuotasRes.data.cuotas || [];
+          const all = cuotasRes.data?.data || cuotasRes.data?.cuotas || [];
           setAllCuotas(all);
           setMorosos(computeMorosos(all, jugadores));
         } catch (err) {
@@ -369,7 +370,7 @@ const Cuotas = () => {
           await apiClient.post(`/cuotas/${cuotaId}/revertir-pago`);
 
           const [cuotasRes] = await Promise.all([apiClient.get('/cuotas')]);
-          const all = cuotasRes.data.cuotas || [];
+          const all = cuotasRes.data?.data || cuotasRes.data?.cuotas || [];
           setAllCuotas(all);
           setMorosos(computeMorosos(all, jugadores));
         } catch (err) {
