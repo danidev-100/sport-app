@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import apiClient from '../api/apiClient';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ import {
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Settings, Trash2, Pencil } from 'lucide-react';
+import ConfirmDialog from '../components/common/ConfirmDialog';
 
 const UserFormDialog = ({ open, onOpenChange, onSubmit, initialData, loading }) => {
   const [formData, setFormData] = useState(
@@ -98,18 +100,25 @@ const UserFormDialog = ({ open, onOpenChange, onSubmit, initialData, loading }) 
 const Users = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [confirmState, setConfirmState] = useState(null);
   const { user: currentUser } = useAuth();
 
-  useEffect(() => { fetchUsers(); }, []);
+  useEffect(() => { fetchUsers(); }, [page]);
 
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const res = await apiClient.get('/users');
-      setUsers(res.data.users || []);
+      const res = await apiClient.get(`/users?page=${page}&limit=10`);
+      const { data, pagination } = res.data;
+      setUsers(data || []);
+      setTotalPages(pagination?.totalPages || 1);
+      setTotal(pagination?.total || 0);
     } catch (err) {
       console.error('Error fetching users:', err);
     } finally {
@@ -137,17 +146,22 @@ const Users = () => {
 
   const handleDelete = async (user) => {
     if (user.id === currentUser.id) {
-      alert('No puedes eliminarte a ti mismo');
+      toast.error('No puedes eliminarte a ti mismo');
       return;
     }
-    if (window.confirm(`¿Eliminar al usuario ${user.nombre}?`)) {
-      try {
-        await apiClient.delete(`/users/${user.id}`);
-        fetchUsers();
-      } catch (err) {
-        console.error('Error deleting user:', err);
+    setConfirmState({
+      title: 'Eliminar usuario',
+      description: `¿Eliminar al usuario ${user.nombre}?`,
+      onConfirm: async () => {
+        setConfirmState(null);
+        try {
+          await apiClient.delete(`/users/${user.id}`);
+          fetchUsers();
+        } catch (err) {
+          console.error('Error deleting user:', err);
+        }
       }
-    }
+    });
   };
 
   return (
@@ -230,12 +244,38 @@ const Users = () => {
         </div>
       )}
 
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between pt-2">
+          <p className="text-sm text-muted-foreground">
+            Página {page} de {totalPages} ({total} usuarios)
+          </p>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>
+              Anterior
+            </Button>
+            <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
+              Siguiente
+            </Button>
+          </div>
+        </div>
+      )}
+
       <UserFormDialog
         open={modalOpen}
         onOpenChange={setModalOpen}
         onSubmit={handleSubmit}
         initialData={editingUser}
         loading={saving}
+      />
+
+      <ConfirmDialog
+        open={!!confirmState}
+        onOpenChange={() => setConfirmState(null)}
+        title={confirmState?.title}
+        description={confirmState?.description}
+        onConfirm={confirmState?.onConfirm}
+        variant="destructive"
       />
     </div>
   );

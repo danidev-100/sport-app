@@ -1,6 +1,8 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'sonner';
 import { useAuth } from './context/AuthContext';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import Sidebar from './components/layout/Sidebar';
 import Navbar from './components/layout/Navbar';
 import Login from './pages/Login';
@@ -56,72 +58,75 @@ const App = () => {
   if (loading) return <LoadingScreen />;
 
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/jugador-login" element={<JugadorLogin />} />
-      <Route
-        path="/pagos"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Pagos />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Dashboard />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/jugadores"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Jugadores />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/cuotas"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Cuotas />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/usuarios"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Users />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/contabilidad"
-        element={
-          <ProtectedRoute>
-            <Layout>
-              <Contabilidad />
-            </Layout>
-          </ProtectedRoute>
-        }
-      />
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+    <ErrorBoundary>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/jugador-login" element={<JugadorLogin />} />
+        <Route
+          path="/pagos"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Pagos />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Dashboard />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/jugadores"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Jugadores />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/cuotas"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Cuotas />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/usuarios"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Users />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/contabilidad"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Contabilidad />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+      <Toaster richColors position="top-right" />
+    </ErrorBoundary>
   );
 };
 

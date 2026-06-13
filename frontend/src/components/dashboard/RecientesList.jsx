@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { formatDate, getPosicionLabel } from '../../utils/formatters';
+import { formatDate } from '../../utils/formatters';
 import { Users } from 'lucide-react';
 
 const Skeleton = () => (
@@ -70,7 +70,7 @@ const RecientesList = ({ jugadores, loading }) => {
                 {jugador.nombre}
               </p>
               <p className="text-xs text-muted-foreground">
-                {getPosicionLabel(jugador.posicion) || 'Sin posición'}
+                {jugador.categoria || 'Sin categoría'}
               </p>
             </div>
             <span className="text-[11px] text-muted-foreground whitespace-nowrap">

@@ -9,18 +9,18 @@ const router = express.Router();
 router.use(auth);
 router.use(authorize('ADMIN'));
 
-router.get('/balance', async (req, res) => {
+router.get('/balance', async (req, res, next) => {
   try {
     const totalIngresos = await ingresoService.getTotal();
     const totalGastos = await gastoService.getTotal();
     const balance = totalIngresos - totalGastos;
     res.json({ totalIngresos, totalGastos, balance });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 });
 
-router.get('/balance-por-fecha', async (req, res) => {
+router.get('/balance-por-fecha', async (req, res, next) => {
   try {
     const ingresos = await ingresoService.getAll();
     const gastos = await gastoService.getAll();
@@ -57,7 +57,7 @@ router.get('/balance-por-fecha', async (req, res) => {
 
     res.json({ balancePorFecha });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 });
 

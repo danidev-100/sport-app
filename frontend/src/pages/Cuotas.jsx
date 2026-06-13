@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { toast } from 'sonner';
 import apiClient from '../api/apiClient';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -15,6 +16,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { CreditCard, Search, AlertTriangle, Plus, CheckCircle, Users, DollarSign, Undo2 } from 'lucide-react';
 import { formatCurrency } from '../utils/formatters';
+import ConfirmDialog from '../components/common/ConfirmDialog';
 
 const filterMeses = [
   { value: '1', label: 'Enero' }, { value: '2', label: 'Febrero' }, { value: '3', label: 'Marzo' },
@@ -164,6 +166,8 @@ const Cuotas = () => {
   const [searchInput, setSearchInput] = useState('');
   const [genData, setGenData] = useState({ jugadorId: '', mes: '', anio: '', monto: '' });
   const [payingId, setPayingId] = useState(null);
+  const [confirmState, setConfirmState] = useState(null);
+  const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false);
 
   // ── Fetch everything on mount ────────────────────
   useEffect(() => {
@@ -229,7 +233,7 @@ const Cuotas = () => {
     if (!genData.anio) missing.push('Año');
     if (!genData.monto || isNaN(Number(genData.monto)) || Number(genData.monto) <= 0) missing.push('Monto');
     if (missing.length) {
-      alert('Completa los campos: ' + missing.join(', '));
+      toast.error('Completa los campos: ' + missing.join(', '));
       return;
     }
 
@@ -249,7 +253,7 @@ const Cuotas = () => {
       const all = cuotasRes.data.cuotas || [];
       setAllCuotas(all);
       setMorosos(computeMorosos(all, jugadores));
-      alert('Cuota generada y marcada como pagada');
+      toast.success('Cuota generada y marcada como pagada');
       setGenData((prev) => ({
         ...prev,
         mes: '',
@@ -258,9 +262,25 @@ const Cuotas = () => {
       }));
     } catch (err) {
       const serverData = err.response?.data;
-      alert('Error: ' + (serverData?.message || err.message));
+      toast.error('Error: ' + (serverData?.message || err.message));
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const handleBulkGenerate = async () => {
+    setBulkConfirmOpen(false);
+    try {
+      const res = await apiClient.post('/cuotas/generar-masivas', {
+        mes: new Date().getMonth() + 1,
+        anio: new Date().getFullYear(),
+      });
+      toast.success(`Generadas ${res.data.generadas} cuotas${res.data.omitidas > 0 ? ` (${res.data.omitidas} ya existían)` : ''}`);
+      // Refresh
+      const [cuotasRes] = await Promise.all([apiClient.get('/cuotas')]);
+      setAllCuotas(cuotasRes.data.cuotas || []);
+    } catch (err) {
+      toast.error('Error: ' + (err.response?.data?.message || err.message));
     }
   };
 
@@ -308,46 +328,58 @@ const Cuotas = () => {
 
   // ── Handle pay cuota ────────────────────────────
   const handlePagar = async (cuotaId, monto) => {
-    if (!confirm(`¿Confirmás el pago de $${monto} para esta cuota?`)) return;
-    setPayingId(cuotaId);
-    try {
-      await apiClient.post('/pagos', {
-        cuotaId,
-        monto: parseFloat(monto),
-        metodoPago: 'EFECTIVO',
-        observacion: 'Pago registrado por administrador',
-      });
+    setConfirmState({
+      title: 'Confirmar pago',
+      description: `¿Confirmás el pago de $${monto} para esta cuota?`,
+      onConfirm: async () => {
+        setConfirmState(null);
+        setPayingId(cuotaId);
+        try {
+          await apiClient.post('/pagos', {
+            cuotaId,
+            monto: parseFloat(monto),
+            metodoPago: 'EFECTIVO',
+            observacion: 'Pago registrado por administrador',
+          });
 
-      // Re-fetch and refresh
-      const [cuotasRes] = await Promise.all([apiClient.get('/cuotas')]);
-      const all = cuotasRes.data.cuotas || [];
-      setAllCuotas(all);
-      setMorosos(computeMorosos(all, jugadores));
-    } catch (err) {
-      const serverData = err.response?.data;
-      alert('Error al registrar pago: ' + (serverData?.message || err.message));
-    } finally {
-      setPayingId(null);
-    }
+          // Re-fetch and refresh
+          const [cuotasRes] = await Promise.all([apiClient.get('/cuotas')]);
+          const all = cuotasRes.data.cuotas || [];
+          setAllCuotas(all);
+          setMorosos(computeMorosos(all, jugadores));
+        } catch (err) {
+          const serverData = err.response?.data;
+          toast.error('Error al registrar pago: ' + (serverData?.message || err.message));
+        } finally {
+          setPayingId(null);
+        }
+      }
+    });
   };
 
   // ── Handle revert payment ───────────────────────
   const handleRevertir = async (cuotaId) => {
-    if (!confirm('¿Revertir el pago de esta cuota? Quedará como impaga.')) return;
-    setPayingId(cuotaId);
-    try {
-      await apiClient.post(`/cuotas/${cuotaId}/revertir-pago`);
+    setConfirmState({
+      title: 'Revertir pago',
+      description: '¿Revertir el pago de esta cuota? Quedará como impaga.',
+      onConfirm: async () => {
+        setConfirmState(null);
+        setPayingId(cuotaId);
+        try {
+          await apiClient.post(`/cuotas/${cuotaId}/revertir-pago`);
 
-      const [cuotasRes] = await Promise.all([apiClient.get('/cuotas')]);
-      const all = cuotasRes.data.cuotas || [];
-      setAllCuotas(all);
-      setMorosos(computeMorosos(all, jugadores));
-    } catch (err) {
-      const serverData = err.response?.data;
-      alert('Error al revertir: ' + (serverData?.message || err.message));
-    } finally {
-      setPayingId(null);
-    }
+          const [cuotasRes] = await Promise.all([apiClient.get('/cuotas')]);
+          const all = cuotasRes.data.cuotas || [];
+          setAllCuotas(all);
+          setMorosos(computeMorosos(all, jugadores));
+        } catch (err) {
+          const serverData = err.response?.data;
+          toast.error('Error al revertir: ' + (serverData?.message || err.message));
+        } finally {
+          setPayingId(null);
+        }
+      }
+    });
   };
 
   // ── Render ───────────────────────────────────────
@@ -469,6 +501,38 @@ const Cuotas = () => {
               {generating ? 'Generando...' : 'Generar Cuota'}
             </Button>
           </form>
+        </div>
+      )}
+
+      {/* Bulk Generate (admin only) */}
+      {isAdmin && (
+        <div className="rounded-xl border border-border/50 bg-card p-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4 text-primary" />
+              <div>
+                <h2 className="text-sm font-semibold">Generar cuotas masivas</h2>
+                <p className="text-xs text-muted-foreground">Crear cuotas para todos los jugadores activos</p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setBulkConfirmOpen(true)}
+            >
+              Generar para todos
+            </Button>
+          </div>
+
+          <ConfirmDialog
+            open={bulkConfirmOpen}
+            onOpenChange={setBulkConfirmOpen}
+            title="¿Generar cuotas para todos?"
+            description="Se generarán cuotas para todos los jugadores activos que aún no tengan cuota en el período seleccionado."
+            confirmLabel="Generar"
+            onConfirm={handleBulkGenerate}
+            variant="default"
+          />
         </div>
       )}
 
@@ -658,6 +722,16 @@ const Cuotas = () => {
           </Table>
         </div>
       )}
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        open={!!confirmState}
+        onOpenChange={() => setConfirmState(null)}
+        title={confirmState?.title}
+        description={confirmState?.description}
+        onConfirm={confirmState?.onConfirm}
+        variant="destructive"
+      />
     </div>
   );
 };

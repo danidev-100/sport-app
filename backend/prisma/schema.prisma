@@ -36,6 +36,7 @@ model User {
   updatedAt DateTime @updatedAt
 
   historialCambios HistorialCambios[]
+  refreshTokens   RefreshToken[]
 }
 
 model Jugador {
@@ -109,16 +110,29 @@ model Partido {
   gastos    Gasto[]
 }
 
+model Fecha {
+  id        String    @id @default(uuid())
+  titulo    String
+  fecha     DateTime
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  ingresos  Ingreso[]
+  gastos    Gasto[]
+}
+
 model Ingreso {
   id          String   @id @default(uuid())
   descripcion String
   monto       Decimal  @db.Decimal(10, 2)
   partidoId   String?
+  fechaId     String?
   fecha       DateTime @default(now())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   partido     Partido? @relation(fields: [partidoId], references: [id])
+  fechaRel    Fecha?   @relation(fields: [fechaId], references: [id])
 }
 
 model Gasto {
@@ -126,9 +140,21 @@ model Gasto {
   descripcion String
   monto       Decimal  @db.Decimal(10, 2)
   partidoId   String?
+  fechaId     String?
   fecha       DateTime @default(now())
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   partido     Partido? @relation(fields: [partidoId], references: [id])
+  fechaRel    Fecha?   @relation(fields: [fechaId], references: [id])
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
 }

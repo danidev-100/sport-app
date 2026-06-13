@@ -1,6 +1,6 @@
 const prisma = require('../config/database');
 
-const getAll = async (filters = {}) => {
+const getAll = async (filters = {}, skip = 0, take = 25) => {
   const where = {};
 
   if (filters.jugadorId) {
@@ -15,14 +15,21 @@ const getAll = async (filters = {}) => {
     where.vencida = filters.vencida === 'true';
   }
 
-  return prisma.cuota.findMany({
-    where,
-    orderBy: [{ anio: 'desc' }, { mes: 'desc' }],
-    include: {
-      jugador: { select: { id: true, nombre: true } },
-      pagos: true
-    }
-  });
+  const [cuotas, total] = await Promise.all([
+    prisma.cuota.findMany({
+      where,
+      skip,
+      take,
+      orderBy: [{ anio: 'desc' }, { mes: 'desc' }],
+      include: {
+        jugador: { select: { id: true, nombre: true } },
+        pagos: true
+      }
+    }),
+    prisma.cuota.count({ where }),
+  ]);
+
+  return { cuotas, total };
 };
 
 const getById = async (id) => {
@@ -226,4 +233,48 @@ const getMorosos = async () => {
   return Object.values(jugadorMap);
 };
 
-module.exports = { getAll, getById, create, update, remove, generarMensuales, crearParaJugador, getMorosos };
+const generarMasivas = async (mes, anio, montosPorCategoria = {}) => {
+  const jugadores = await prisma.jugador.findMany({
+    where: { activo: true },
+    select: {
+      id: true,
+      nombre: true,
+      categoria: true,
+      cuotas: {
+        where: { mes, anio },
+        select: { id: true }
+      }
+    }
+  });
+
+  const resultado = { generadas: 0, omitidas: 0, errores: [] };
+
+  const data = [];
+  for (const jugador of jugadores) {
+    // Skip if they already have a cuota for this period
+    if (jugador.cuotas.length > 0) {
+      resultado.omitidas++;
+      continue;
+    }
+
+    // Get monto for this category, or default
+    const monto = montosPorCategoria[jugador.categoria] || 25000;
+
+    data.push({
+      jugadorId: jugador.id,
+      mes,
+      anio,
+      monto,
+      fechaVencimiento: new Date(anio, mes - 1, 15), // 15th of the month
+    });
+  }
+
+  if (data.length > 0) {
+    await prisma.cuota.createMany({ data });
+    resultado.generadas = data.length;
+  }
+
+  return resultado;
+};
+
+module.exports = { getAll, getById, create, update, remove, generarMensuales, crearParaJugador, getMorosos, generarMasivas };

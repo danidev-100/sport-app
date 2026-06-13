@@ -1,6 +1,7 @@
 const express = require('express');
 const { body } = require('express-validator');
 const mercadoPagoService = require('../services/mercadoPagoService');
+const { verifyWebhookSignature } = require('../services/mercadoPagoService');
 const auth = require('../middleware/auth');
 const authorize = require('../middleware/roles');
 const authJugador = require('../middleware/authJugador');
@@ -17,7 +18,7 @@ router.post('/', auth, authorize('ADMIN'), [
   body('observacion').optional().isString(),
 ], pagoController.create);
 
-router.post('/crear-preferencia', authJugador, async (req, res) => {
+router.post('/crear-preferencia', authJugador, async (req, res, next) => {
   try {
     const { cuotaId } = req.body;
     const jugadorId = req.jugadorId;
@@ -34,11 +35,20 @@ router.post('/crear-preferencia', authJugador, async (req, res) => {
     const preference = await mercadoPagoService.createPaymentPreference(cuota, cuota.jugador);
     res.json({ preferenceId: preference.id, initPoint: preference.init_point });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 });
 
-router.post('/webhook', async (req, res) => {
+// HMAC validation middleware for webhook
+const validateWebhook = (req, res, next) => {
+  const signature = req.headers['x-signature'];
+  if (!verifyWebhookSignature(signature, req.body)) {
+    return res.status(401).json({ message: 'Firma inválida', code: 'INVALID_SIGNATURE' });
+  }
+  next();
+};
+
+router.post('/webhook', validateWebhook, async (req, res) => {
   try {
     await mercadoPagoService.processWebhook(req.body);
     res.json({ received: true });
@@ -47,7 +57,7 @@ router.post('/webhook', async (req, res) => {
   }
 });
 
-router.get('/mis-cuotas', authJugador, async (req, res) => {
+router.get('/mis-cuotas', authJugador, async (req, res, next) => {
   try {
     const cuotas = await prisma.cuota.findMany({
       where: { jugadorId: req.jugadorId },
@@ -56,7 +66,7 @@ router.get('/mis-cuotas', authJugador, async (req, res) => {
     });
     res.json(cuotas);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 });
 

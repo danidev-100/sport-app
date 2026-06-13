@@ -8,6 +8,7 @@ import {
   ChevronDown, ChevronRight, Plus, Trash2, Receipt, ShoppingCart,
   CalendarDays, Pencil
 } from 'lucide-react';
+import ConfirmDialog from '../common/ConfirmDialog';
 
 const FechaList = ({ refreshTrigger, onEditFecha }) => {
   const [fechas, setFechas] = useState([]);
@@ -17,6 +18,7 @@ const FechaList = ({ refreshTrigger, onEditFecha }) => {
   const [addingGasto, setAddingGasto] = useState(null);
   const [newIngreso, setNewIngreso] = useState({ descripcion: '', monto: '' });
   const [newGasto, setNewGasto] = useState({ descripcion: '', monto: '' });
+  const [confirmState, setConfirmState] = useState(null);
 
   useEffect(() => {
     const fetchFechas = async () => {
@@ -37,12 +39,17 @@ const FechaList = ({ refreshTrigger, onEditFecha }) => {
   const toggleExpand = (id) => setExpanded((p) => ({ ...p, [id]: !p[id] }));
 
   const handleDeleteFecha = async (id) => {
-    if (window.confirm('¿Eliminar este partido con todos sus ingresos y gastos?')) {
-      try {
-        await deleteFecha(id);
-        setFechas((p) => p.filter((f) => f.id !== id));
-      } catch (err) { console.error(err); }
-    }
+    setConfirmState({
+      title: 'Eliminar partido',
+      description: '¿Eliminar este partido con todos sus ingresos y gastos?',
+      onConfirm: async () => {
+        setConfirmState(null);
+        try {
+          await deleteFecha(id);
+          setFechas((p) => p.filter((f) => f.id !== id));
+        } catch (err) { console.error(err); }
+      }
+    });
   };
 
   const handleAddIngreso = async (fechaId, fechaTitulo) => {
@@ -279,6 +286,15 @@ const FechaList = ({ refreshTrigger, onEditFecha }) => {
           </div>
         );
       })}
+
+      <ConfirmDialog
+        open={!!confirmState}
+        onOpenChange={() => setConfirmState(null)}
+        title={confirmState?.title}
+        description={confirmState?.description}
+        onConfirm={confirmState?.onConfirm}
+        variant="destructive"
+      />
     </div>
   );
 };

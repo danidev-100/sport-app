@@ -1,13 +1,19 @@
 const prisma = require('../config/database');
 
-const getAll = async () => {
-  return prisma.partido.findMany({
-    include: {
-      ingresos: { orderBy: { createdAt: 'desc' } },
-      gastos: { orderBy: { createdAt: 'desc' } },
-    },
-    orderBy: { createdAt: 'desc' },
-  });
+const getAll = async (skip = 0, take = 25) => {
+  const [partidos, total] = await Promise.all([
+    prisma.partido.findMany({
+      skip,
+      take,
+      include: {
+        ingresos: { orderBy: { createdAt: 'desc' } },
+        gastos: { orderBy: { createdAt: 'desc' } },
+      },
+      orderBy: { createdAt: 'desc' },
+    }),
+    prisma.partido.count(),
+  ]);
+  return { partidos, total };
 };
 
 const getById = async (id) => {

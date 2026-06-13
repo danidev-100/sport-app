@@ -1,6 +1,6 @@
 const prisma = require('../config/database');
 
-const getAll = async (filters = {}) => {
+const getAll = async (filters = {}, skip = 0, take = 25) => {
   const where = {};
 
   if (filters.fechaDesde || filters.fechaHasta) {
@@ -13,10 +13,16 @@ const getAll = async (filters = {}) => {
     where.partidoId = filters.partidoId;
   }
 
-  return prisma.gasto.findMany({
-    where,
-    orderBy: { fecha: 'desc' }
-  });
+  const [gastos, total] = await Promise.all([
+    prisma.gasto.findMany({
+      where,
+      skip,
+      take,
+      orderBy: { fecha: 'desc' }
+    }),
+    prisma.gasto.count({ where }),
+  ]);
+  return { gastos, total };
 };
 
 const getById = async (id) => {

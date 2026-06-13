@@ -1,9 +1,12 @@
 const prisma = require('../config/database');
+const { paginate, paginatedResponse } = require('../utils/helpers');
 const { validationResult } = require('express-validator');
+const { NotFoundError } = require('../utils/errors');
 
-const getAll = async (req, res) => {
+const getAll = async (req, res, next) => {
   try {
     const { cuotaId, fechaDesde, fechaHasta } = req.query;
+    const { skip, take, page, limit } = paginate(req.query.page, req.query.limit);
     const where = {};
 
     if (cuotaId) where.cuotaId = cuotaId;
@@ -13,37 +16,42 @@ const getAll = async (req, res) => {
       if (fechaHasta) where.fechaPago.lte = new Date(fechaHasta);
     }
 
-    const pagos = await prisma.pago.findMany({
-      where,
-      orderBy: { fechaPago: 'desc' },
-      include: {
-        cuota: {
-          include: {
-            jugador: { select: { id: true, nombre: true } }
+    const [pagos, total] = await Promise.all([
+      prisma.pago.findMany({
+        where,
+        skip,
+        take,
+        orderBy: { fechaPago: 'desc' },
+        include: {
+          cuota: {
+            include: {
+              jugador: { select: { id: true, nombre: true } }
+            }
           }
         }
-      }
-    });
-    res.json({ pagos });
+      }),
+      prisma.pago.count({ where }),
+    ]);
+    res.json(paginatedResponse(pagos, total, page, limit));
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    next(error);
   }
 };
 
-const getById = async (req, res) => {
+const getById = async (req, res, next) => {
   try {
     const pago = await prisma.pago.findUnique({
       where: { id: req.params.id },
       include: { cuota: { include: { jugador: true } } }
     });
-    if (!pago) throw new Error('Pago no encontrado');
+    if (!pago) throw new NotFoundError('Pago no encontrado');
     res.json({ pago });
   } catch (error) {
-    res.status(404).json({ message: error.message });
+    next(error);
   }
 };
 
-const create = async (req, res) => {
+const create = async (req, res, next) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -56,7 +64,7 @@ const create = async (req, res) => {
       where: { id: cuotaId },
       include: { pagos: true }
     });
-    if (!cuota) throw new Error('Cuota no encontrada');
+    if (!cuota) throw new NotFoundError('Cuota no encontrada');
 
     const totalPagado = cuota.pagos.reduce((sum, p) => sum + parseFloat(p.monto), 0);
     const totalPagar = parseFloat(cuota.monto);
@@ -85,16 +93,16 @@ const create = async (req, res) => {
 
     res.status(201).json({ pago, cuota: cuotaActualizada });
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    next(error);
   }
 };
 
-const remove = async (req, res) => {
+const remove = async (req, res, next) => {
   try {
     const pago = await prisma.pago.findUnique({
       where: { id: req.params.id }
     });
-    if (!pago) throw new Error('Pago no encontrado');
+    if (!pago) throw new NotFoundError('Pago no encontrado');
 
     await prisma.pago.delete({ where: { id: req.params.id } });
 
@@ -113,7 +121,7 @@ const remove = async (req, res) => {
 
     res.json({ message: 'Pago eliminado correctamente' });
   } catch (error) {
-    res.status(404).json({ message: error.message });
+    next(error);
   }
 };
 
